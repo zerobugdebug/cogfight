@@ -1,1 +1,1 @@
-# cogfight
+Enter the world of CogFight, where the power to create your ultimate fighter lies in your hands. With a unique fighter generation system and intense turn-based combat, immerse yourself in a realm of endless possibilities powered by GPT technology.
