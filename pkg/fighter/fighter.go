@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/sashabaranov/go-openai"
@@ -68,9 +69,9 @@ func CreateFighter() *Fighter {
 
 	attacks := []*Attack{}
 	attackPrompt := &survey.Input{
-		Message: "Enter an attack name (leave empty to finish):",
+		Message: "Enter an attack name:",
 	}
-	for {
+	for i := 0; i < 3; i++ {
 		var attackName string
 		err := survey.AskOne(attackPrompt, &attackName, survey.WithValidator(survey.Required))
 		if err != nil {
@@ -138,29 +139,53 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 
 // validateAttackName validates the given attack name using OpenAI API and returns the attack parameters
 func validateAttackName(attackName string) (*Attack, error) {
-	client := openai.NewClient("YOUR_API_KEY_HERE")
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("OpenAI API key not found in environment variable OPENAI_API_KEY")
+	}
+
+	client := openai.NewClient(apiKey)
 
 	// Define the prompt template
-	promptTemplate := `{
-		"prompt": "Please provide the parameters for the '%s' attack:",
-		"max_tokens": 100,
-		"model": "text-davinci-002",
-		"temperature": 0.5,
-		"stop": ["\n"]
-	}`
+	promptTemplate := os.Getenv("COG_VALIDATION_ATTACK_PROMPT")
 
 	// Send the prompt to OpenAI API and get the response
 	prompt := fmt.Sprintf(promptTemplate, attackName)
-	params := openai.CompletionRequest{
-		Prompt: &prompt,
-	}
-	response, err := client.CreateCompletion(context.Background(), params)
+
+	response, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model:     openai.GPT3Dot5Turbo,
+			MaxTokens: 3,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			},
+		},
+	)
+
+	// params := openai.CompletionRequest{
+	// 	Model:     openai.GPT3Dot5Turbo,
+	// 	MaxTokens: 100,
+	// 	Prompt:    prompt,
+	// }
+	fmt.Println(prompt)
+	// response, err := client.CreateCompletion(context.Background(), params)
 	if err != nil {
 		return nil, fmt.Errorf("error sending OpenAI API request: %s", err)
 	}
 
 	// Parse the response to get the attack parameters
-	paramsJSON := response.Choices[0].Text
+	paramsJSON := response.Choices[0].Message.Content
+	fmt.Println(paramsJSON)
+	confirmed := false
+	confPrompt := &survey.Confirm{
+		Message: "Confirmed?",
+	}
+	survey.AskOne(confPrompt, &confirmed)
+
 	attack := &Attack{}
 	err = json.Unmarshal([]byte(paramsJSON), attack)
 	if err != nil {
@@ -169,4 +194,41 @@ func validateAttackName(attackName string) (*Attack, error) {
 
 	attack.Name = attackName
 	return attack, nil
+}
+
+// SaveFighterToFile saves a fighter object to a JSON file
+func SaveFighterToFile(fighter *Fighter, filename string) error {
+	// Convert the fighter object to JSON
+	fighterJSON, err := json.MarshalIndent(fighter, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error encoding fighter to JSON: %s", err)
+	}
+
+	// Write the JSON data to the file
+	err = os.WriteFile(filename, fighterJSON, 0644)
+	if err != nil {
+		return fmt.Errorf("error writing fighter data to file: %s", err)
+	}
+
+	fmt.Printf("Fighter data saved to %s!\n", filename)
+	return nil
+}
+
+// LoadFighterFromFile loads a fighter object from a JSON file
+func LoadFighterFromFile(filename string) (*Fighter, error) {
+	// Read the JSON data from the file
+	fighterJSON, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error reading fighter data from file: %s", err)
+	}
+
+	// Convert the JSON data to a fighter object
+	fighter := &Fighter{}
+	err = json.Unmarshal(fighterJSON, fighter)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding fighter from JSON: %s", err)
+	}
+
+	fmt.Printf("Fighter data loaded from %s!\n", filename)
+	return fighter, nil
 }
