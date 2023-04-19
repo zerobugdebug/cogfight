@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/your_username/console-game/pkg/fighter"
+	"github.com/zerobugdebug/cogfight/pkg/fighter"
 )
 
 // Fight represents the fight match between two fighters

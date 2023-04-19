@@ -5,6 +5,7 @@ import (
 
 	"github.com/zerobugdebug/cogfight/pkg/fighter"
 	"github.com/zerobugdebug/cogfight/pkg/game"
+
 )
 
 func main() {
