@@ -32,7 +32,7 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 		fmt.Printf("\nTurn %d: %s attacks %s!\n", currentTurn, attacker.Name, defender.Name)
 
 		// Determine the attack damage based on the attacker's speed and a random factor
-		attackDamage := rand.Intn(attacker.Speed) + 1
+		attackDamage := rand.Intn(attacker.Age) + 1
 
 		// Perform the attack and deduct the damage from the defender's health
 		defender.CurrentHealth -= attackDamage
