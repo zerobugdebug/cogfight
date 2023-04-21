@@ -13,6 +13,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/sashabaranov/go-openai"
+	"github.com/zerobugdebug/cogfight/pkg/attack"
 )
 
 /* // AttackType represents the type of a fighting move
@@ -82,7 +83,7 @@ type Fighter struct {
 	BlockChanceBonus            float32
 	CriticalChanceBonus         float32
 	SpecialChanceBonus          float32
-	Attacks                     []*Attack
+	Attacks                     []*attack.Attack
 	CurrentHealth               int
 	MaxHealth                   int
 }
@@ -298,14 +299,14 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 		Height:        rand.Intn(50) + 150, // Height between 150 and 199 cm
 		Weight:        rand.Intn(50) + 50,  // Weight between 50 and 99 kg
 		Age:           rand.Intn(30) + 20,  // Age between 20 and 49 years
-		Attacks:       []*Attack{},
+		Attacks:       []*attack.Attack{},
 		CurrentHealth: 100,
 		MaxHealth:     100,
 	}
 
 	// Copy the player's attacks and modify the parameters for the computer's attacks
 	for _, playerAttack := range playerFighter.Attacks {
-		computerAttack := &Attack{
+		computerAttack := &attack.Attack{
 			Name:           playerAttack.Name,
 			Damage:         playerAttack.Damage - 10,
 			Complexity:     playerAttack.Complexity + 1,
