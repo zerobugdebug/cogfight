@@ -65,13 +65,13 @@ func (f *Fighter) DisplayFighter() {
 	fmt.Printf("║ Critical Chance Bonus: %-33.2f ║\n", f.CriticalChanceBonus)
 	fmt.Printf("║ Special Chance Bonus: %-34.2f ║\n", f.SpecialChanceBonus)
 	fmt.Println(spacer)
-	fmt.Println("║ Attacks:                                                  ║")
+	fmt.Println("║ Attacks:                                                 ║")
 	for i, attack := range f.Attacks {
 		fmt.Printf("║ %d. %-53s ║\n", i+1, attack.Name)
 	}
 	fmt.Println(spacer)
-	fmt.Printf("║ Current Health: %-38d ║\n", f.CurrentHealth)
-	fmt.Printf("║ Max Health: %-41d ║\n", f.MaxHealth)
+	fmt.Printf("║ Current Health: %-40d ║\n", f.CurrentHealth)
+	fmt.Printf("║ Max Health: %-44d ║\n", f.MaxHealth)
 	fmt.Println(spacer)
 	fmt.Println(bottomBorder)
 }
@@ -126,6 +126,7 @@ func CreateFighter() *Fighter {
 		Prompt: &survey.Input{
 			Message: "Enter fighter height (150-220 cm):",
 			Help:    "Please enter your fighter height. Taller fighters will favour Strength, Offense and Control, while lower height will give benefits to Agility, Defense and Speed.",
+			Default: "185",
 		},
 		Validate: validateNumber(150, 220),
 	}
@@ -136,6 +137,7 @@ func CreateFighter() *Fighter {
 		Prompt: &survey.Input{
 			Message: "Enter fighter weight (50-200 kg):",
 			Help:    "Please enter your fighter weight. Heavier fighters tend to have better Strength, Endurance and Control, while lighter fighters rely more on the Agility, Burst and Speed.",
+			Default: "125",
 		},
 		Validate: validateNumber(50, 200),
 	}
@@ -146,6 +148,7 @@ func CreateFighter() *Fighter {
 		Prompt: &survey.Input{
 			Message: "Enter fighter age (18-60 years):",
 			Help:    "Please enter your fighter age. Older fighters tend to have better Intelligence, while younger fighters rely more on the Instinct.",
+			Default: "40",
 		},
 		Validate: validateNumber(18, 60),
 	}
@@ -157,6 +160,7 @@ func CreateFighter() *Fighter {
 			Message: "Choose fighter agility/strength balance:",
 			Options: []string{"Very high Agility, Very low Strength", "High Agility, Low Strength", "Balanced", "Low Agility, High Strength", "Very low Agility, Very high Strength"},
 			Help:    "This parameter determines the balance between Agility and Strength. High Agility will allow fighter to execute more complex attack with better chances to hit and block, while high Strength will increase damage and special effects chance.",
+			Default: "Balanced",
 		},
 	}
 	qs = append(qs, agilityStrengthBalanceQuestion)
@@ -167,6 +171,7 @@ func CreateFighter() *Fighter {
 			Message: "Choose fighter burst/endurance balance:",
 			Options: []string{"Very high Burst, Very low Endurance", "High Burst, Low Endurance", "Balanced", "Low Burst, High Endurance", "Very low Burst, Very high Endurance"},
 			Help:    "This parameter determines the balance between Burst and Endurance. Fighters with high Burst will get better chances to hit and special effects, but high Endurance will give bonuses to damage and blocking chance.",
+			Default: "Balanced",
 		},
 	}
 	qs = append(qs, burstEnduranceBalanceQuestion)
@@ -177,6 +182,7 @@ func CreateFighter() *Fighter {
 			Message: "Choose fighter defense/offense balance:",
 			Options: []string{"Very high Defense, Very low Offense", "High Defense, Low Offense", "Balanced", "Low Defense, High Offense", "Very low Defense, Very high Offense"},
 			Help:    "This parameter determines the balance between Defense and Offense. Increasing Defense will improve your chances of blocking attacks, while increasing Offense will help with hitting.",
+			Default: "Balanced",
 		},
 	}
 	qs = append(qs, defenseOffenseBalanceQuestion)
@@ -187,6 +193,7 @@ func CreateFighter() *Fighter {
 			Message: "Choose fighter speed/control balance:",
 			Options: []string{"Very high Speed, Very low Control", "High Speed, Low Control", "Balanced", "Low Speed, High Control", "Very low Speed, Very high Control"},
 			Help:    "This parameter determines the balance between Speed and Control. Increasing Speed will improve your chances of successfully hitting and blocking attacks, while high Control will help with executing more complex attacks and critical hits",
+			Default: "Balanced",
 		},
 	}
 	qs = append(qs, speedControlBalanceQuestion)
@@ -197,6 +204,7 @@ func CreateFighter() *Fighter {
 			Message: "Choose fighter intelligence/instinct balance:",
 			Options: []string{"Very high Intelligence, Very low Instinct", "High Intelligence, Low Instinct", "Balanced", "Low Intelligence, High Instinct", "Very low Intelligence, Very high Instinct"},
 			Help:    "This parameter determines the balance between Intelligence and Instinct. Increasing Intelligence will help with executing more complex attacks and critical hits, while increasing Instinct will improve your chances of successfully hitting and blocking attacks",
+			Default: "Balanced",
 		},
 	}
 	qs = append(qs, intelligenceInstinctBalanceQuestion)
@@ -314,17 +322,17 @@ func CreateFighter() *Fighter {
 		DefenseOffenseBalance:       float32(answers.DefenseOffenseBalance) + (float32(answers.Height)-185)/20,
 		SpeedControlBalance:         float32(answers.SpeedControlBalance) + (float32(answers.Weight)-125)/50 + (float32(answers.Height)-185)/20,
 		IntelligenceInstinctBalance: float32(answers.IntelligenceInstinctBalance) - (float32(answers.Age)-39)/10,
-		CurrentHealth:               100,
-		MaxHealth:                   100,
+		CurrentHealth:               250 + (answers.Weight - 125),
+		MaxHealth:                   250 + (answers.Weight - 125),
 		Attacks:                     attacks,
 	}
 
-	fighter.DamageBonus = (fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance - 4) * 10
-	fighter.ComplexityBonus = (-fighter.AgilityStrengthBalance + fighter.SpeedControlBalance - fighter.IntelligenceInstinctBalance + 2) * 2
-	fighter.HitChanceBonus = (-fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance + fighter.DefenseOffenseBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance + 2) * 2
-	fighter.BlockChanceBonus = (-fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance - fighter.DefenseOffenseBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance + 2) * 2
-	fighter.CriticalChanceBonus = (fighter.SpeedControlBalance - fighter.IntelligenceInstinctBalance) * 2
-	fighter.SpecialChanceBonus = (fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance) * 2
+	fighter.DamageBonus = (fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance - 4) * 5
+	fighter.ComplexityBonus = (fighter.AgilityStrengthBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance - 2) * 3
+	fighter.HitChanceBonus = (-fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance + fighter.DefenseOffenseBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance + 2) * 3
+	fighter.BlockChanceBonus = (-fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance - fighter.DefenseOffenseBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance + 2) * 3
+	fighter.CriticalChanceBonus = (fighter.SpeedControlBalance - fighter.IntelligenceInstinctBalance) * 3
+	fighter.SpecialChanceBonus = (fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance) * 3
 
 	fmt.Printf("\n%s has been created!\n", fighter.Name)
 	fighter.DisplayFighter()
@@ -367,16 +375,16 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 		SpeedControlBalance:         float32(answers.SpeedControlBalance) + (float32(answers.Weight)-125)/50 + (float32(answers.Height)-185)/20,
 		IntelligenceInstinctBalance: float32(answers.IntelligenceInstinctBalance) - (float32(answers.Age)-39)/10,
 		Attacks:                     []*attack.Attack{},
-		CurrentHealth:               100,
-		MaxHealth:                   100,
+		CurrentHealth:               250 + (answers.Weight - 125),
+		MaxHealth:                   250 + (answers.Weight - 125),
 	}
 
-	computerFighter.DamageBonus = (computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - 4) * 10
-	computerFighter.ComplexityBonus = (-computerFighter.AgilityStrengthBalance + computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance + 2) * 2
-	computerFighter.HitChanceBonus = (-computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance + computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance + 2) * 2
-	computerFighter.BlockChanceBonus = (-computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance + 2) * 2
-	computerFighter.CriticalChanceBonus = (computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance) * 2
-	computerFighter.SpecialChanceBonus = (computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance) * 2
+	computerFighter.DamageBonus = (computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - 4) * 5
+	computerFighter.ComplexityBonus = (computerFighter.AgilityStrengthBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance - 2) * 3
+	computerFighter.HitChanceBonus = (-computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance + computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance + 2) * 3
+	computerFighter.BlockChanceBonus = (-computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance + 2) * 3
+	computerFighter.CriticalChanceBonus = (computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance) * 3
+	computerFighter.SpecialChanceBonus = (computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance) * 3
 
 	defaultAttacks := attack.NewDefaultAttacks()
 	for range playerFighter.Attacks {
