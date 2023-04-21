@@ -31,5 +31,5 @@ func main() {
 	winner := game.Fight(playerFighter, computerFighter)
 
 	// Display the winner
-	log.Info("The winner is %s!\n", winner.Name)
+	log.Info("The winner is ", winner.Name)
 }

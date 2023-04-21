@@ -42,6 +42,40 @@ type Fighter struct {
 	MaxHealth                   int
 }
 
+func (f *Fighter) DisplayFighter() {
+	topBorder := "╔══════════════════════════════════════════════════════════╗"
+	bottomBorder := "╚══════════════════════════════════════════════════════════╝"
+	spacer := "║                                                          ║"
+
+	fmt.Println(topBorder)
+	fmt.Println(spacer)
+	fmt.Printf("║ Name: %-50s ║\n", f.Name)
+	fmt.Printf("║ Height: %-48d ║\n", f.Height)
+	fmt.Printf("║ Weight: %-48d ║\n", f.Weight)
+	fmt.Printf("║ Age: %-51d ║\n", f.Age)
+	fmt.Printf("║ Agility Strength Balance: %-30.2f ║\n", f.AgilityStrengthBalance)
+	fmt.Printf("║ Burst Endurance Balance: %-31.2f ║\n", f.BurstEnduranceBalance)
+	fmt.Printf("║ Defense Offense Balance: %-31.2f ║\n", f.DefenseOffenseBalance)
+	fmt.Printf("║ Speed Control Balance: %-33.2f ║\n", f.SpeedControlBalance)
+	fmt.Printf("║ Intelligence Instinct Balance: %-25.2f ║\n", f.IntelligenceInstinctBalance)
+	fmt.Printf("║ Damage Bonus: %-42.2f ║\n", f.DamageBonus)
+	fmt.Printf("║ Complexity Bonus: %-38.2f ║\n", f.ComplexityBonus)
+	fmt.Printf("║ Hit Chance Bonus: %-38.2f ║\n", f.HitChanceBonus)
+	fmt.Printf("║ Block Chance Bonus: %-36.2f ║\n", f.BlockChanceBonus)
+	fmt.Printf("║ Critical Chance Bonus: %-33.2f ║\n", f.CriticalChanceBonus)
+	fmt.Printf("║ Special Chance Bonus: %-34.2f ║\n", f.SpecialChanceBonus)
+	fmt.Println(spacer)
+	fmt.Println("║ Attacks:                                                  ║")
+	for i, attack := range f.Attacks {
+		fmt.Printf("║ %d. %-53s ║\n", i+1, attack.Name)
+	}
+	fmt.Println(spacer)
+	fmt.Printf("║ Current Health: %-38d ║\n", f.CurrentHealth)
+	fmt.Printf("║ Max Health: %-41d ║\n", f.MaxHealth)
+	fmt.Println(spacer)
+	fmt.Println(bottomBorder)
+}
+
 // validateNumber requires that the number provided was between min and max
 func validateNumber(optParams ...int) survey.Validator {
 	var min, max int
@@ -207,6 +241,7 @@ func CreateFighter() *Fighter {
 
 	i := 0
 	for i < numAttacks {
+		// TODO: Add number of attack in the question, like 1 of 3
 		attackTypeSelected := 0
 		// Ask for attack type
 		err := survey.AskOne(attackTypePrompt, &attackTypeSelected, survey.WithValidator(survey.Required))
@@ -259,7 +294,7 @@ func CreateFighter() *Fighter {
 		}
 
 		if validAttack {
-			complexityValue, err := getIntegerOpenAIResponse("COG_COMPLEXITY_ATTACK_PROMPT", attackName)
+			complexityValue, err := getIntegerOpenAIResponse("COG_COMPLEXITY_ATTACK_PROMPT", customAttackName)
 			if err != nil {
 				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
 				continue
@@ -291,40 +326,70 @@ func CreateFighter() *Fighter {
 	fighter.CriticalChanceBonus = (fighter.SpeedControlBalance - fighter.IntelligenceInstinctBalance) * 2
 	fighter.SpecialChanceBonus = (fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance) * 2
 
-	fmt.Println(fighter)
 	fmt.Printf("\n%s has been created!\n", fighter.Name)
+	fighter.DisplayFighter()
+
 	return fighter
 }
 
 // GenerateComputerFighter generates a computer-controlled fighter
 func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
+
+	answers := struct {
+		Height                      int
+		Weight                      int
+		Age                         int
+		AgilityStrengthBalance      int
+		BurstEnduranceBalance       int
+		DefenseOffenseBalance       int
+		SpeedControlBalance         int
+		IntelligenceInstinctBalance int
+	}{}
+	answers.AgilityStrengthBalance = rand.Intn(5)
+	answers.BurstEnduranceBalance = rand.Intn(5)
+	answers.DefenseOffenseBalance = rand.Intn(5)
+	answers.SpeedControlBalance = rand.Intn(5)
+	answers.IntelligenceInstinctBalance = rand.Intn(5)
+
+	answers.Height = rand.Intn(71) + 150 // Height between 150 and 199 cm
+	answers.Weight = rand.Intn(151) + 50 // Weight between 50 and 99 kg
+	answers.Age = rand.Intn(43) + 18     // Age between 20 and 49 years
+
 	// Generate random values for the computer fighter's attributes
 	computerFighter := &Fighter{
-		Name:          "Computer Fighter",
-		Height:        rand.Intn(50) + 150, // Height between 150 and 199 cm
-		Weight:        rand.Intn(50) + 50,  // Weight between 50 and 99 kg
-		Age:           rand.Intn(30) + 20,  // Age between 20 and 49 years
-		Attacks:       []*attack.Attack{},
-		CurrentHealth: 100,
-		MaxHealth:     100,
+		Name:                        "Computer Fighter",
+		Height:                      answers.Height,
+		Weight:                      answers.Weight,
+		Age:                         answers.Age,
+		AgilityStrengthBalance:      float32(answers.AgilityStrengthBalance) + (float32(answers.Weight)-125)/50 + (float32(answers.Height)-185)/20,
+		BurstEnduranceBalance:       float32(answers.BurstEnduranceBalance) + (float32(answers.Weight)-125)/50,
+		DefenseOffenseBalance:       float32(answers.DefenseOffenseBalance) + (float32(answers.Height)-185)/20,
+		SpeedControlBalance:         float32(answers.SpeedControlBalance) + (float32(answers.Weight)-125)/50 + (float32(answers.Height)-185)/20,
+		IntelligenceInstinctBalance: float32(answers.IntelligenceInstinctBalance) - (float32(answers.Age)-39)/10,
+		Attacks:                     []*attack.Attack{},
+		CurrentHealth:               100,
+		MaxHealth:                   100,
 	}
 
-	// Copy the player's attacks and modify the parameters for the computer's attacks
-	for _, playerAttack := range playerFighter.Attacks {
-		computerAttack := &attack.Attack{
-			Name:           playerAttack.Name,
-			Damage:         playerAttack.Damage - 10,
-			Complexity:     playerAttack.Complexity + 1,
-			HitChance:      playerAttack.HitChance - 5,
-			BlockChance:    playerAttack.BlockChance - 5,
-			CriticalChance: playerAttack.CriticalChance - 5,
-			SpecialChance:  playerAttack.SpecialChance - 5,
-		}
+	computerFighter.DamageBonus = (computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - 4) * 10
+	computerFighter.ComplexityBonus = (-computerFighter.AgilityStrengthBalance + computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance + 2) * 2
+	computerFighter.HitChanceBonus = (-computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance + computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance + 2) * 2
+	computerFighter.BlockChanceBonus = (-computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance + 2) * 2
+	computerFighter.CriticalChanceBonus = (computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance) * 2
+	computerFighter.SpecialChanceBonus = (computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance) * 2
 
+	defaultAttacks := attack.NewDefaultAttacks()
+	for range playerFighter.Attacks {
+		attacksList := defaultAttacks.GetAttacksByType(attack.AttackType(rand.Intn(attack.MaxAttackTypes - 1)))
+		fmt.Println(attacksList)
+		fmt.Println(len(attacksList))
+		computerAttack := attacksList[rand.Intn(len(attacksList))]
+		fmt.Println(computerAttack)
 		computerFighter.Attacks = append(computerFighter.Attacks, computerAttack)
 	}
 
 	fmt.Printf("\n%s has been generated!\n", computerFighter.Name)
+	computerFighter.DisplayFighter()
 	return computerFighter
 }
 
