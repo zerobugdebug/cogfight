@@ -16,56 +16,10 @@ import (
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 )
 
-/* // AttackType represents the type of a fighting move
-type AttackType int
-
 const (
-	Punch AttackType = iota
-	HandStrike
-	Kick
-	KneeStrike
-	ElbowStrike
-	Throw
-	Lock
-	Choke
+	numAttacks int = 3
 )
 
-// String returns the string representation of the attack type
-func (at AttackType) String() string {
-	switch at {
-	case Punch:
-		return "Punch"
-	case HandStrike:
-		return "Hand strike"
-	case Kick:
-		return "Kick"
-	case KneeStrike:
-		return "Knee strike"
-	case ElbowStrike:
-		return "Elbow strike"
-	case Throw:
-		return "Throw"
-	case Lock:
-		return "Lock"
-	case Choke:
-		return "Choke"
-	default:
-		return ""
-	}
-}
-
-// Attack represents an attack in the game
-type Attack struct {
-	Name           string
-	Type           AttackType
-	Damage         int
-	Complexity     int
-	HitChance      int
-	BlockChance    int
-	CriticalChance int
-	SpecialChance  int
-}
-*/
 // Fighter represents a fighter in the game
 type Fighter struct {
 	Name                        string
@@ -234,21 +188,71 @@ func CreateFighter() *Fighter {
 
 	fmt.Println(answers)
 
-	//attacks := []*Attack{}
-	attackPrompt := &survey.Input{
-		Message: "Enter an attack name:",
+	attackType := attack.AttackType(0)
+	attackTypePromptOptions := []string{}
+
+	for attackType.String() != "" {
+		attackTypePromptOptions = append(attackTypePromptOptions, attackType.String())
+		attackType++
 	}
 
-	for i := 0; i < 3; i++ {
-		var attackName string
-		err := survey.AskOne(attackPrompt, &attackName, survey.WithValidator(survey.Required))
-		if err != nil {
+	attackTypePrompt := &survey.Select{
+		Message:  "Select an attack type:",
+		Options:  attackTypePromptOptions,
+		PageSize: attack.MaxAttackTypes,
+	}
 
+	defaultAttacks := attack.NewDefaultAttacks()
+	attacks := []*attack.Attack{}
+
+	i := 0
+	for i < numAttacks {
+		attackTypeSelected := 0
+		// Ask for attack type
+		err := survey.AskOne(attackTypePrompt, &attackTypeSelected, survey.WithValidator(survey.Required))
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		attackType = attack.AttackType(attackTypeSelected)
+		fmt.Println(defaultAttacks.GetAttacksByType(attackType))
+
+		// If non-custom type, ask for specific attack
+		if attackType != attack.Custom {
+			attackNamePromptOptions := []string{}
+			for _, value := range defaultAttacks.GetAttacksByType(attackType) {
+				attackNamePromptOptions = append(attackNamePromptOptions, value.Name)
+			}
+			attackNamePrompt := &survey.Select{
+				Message:  "Select an attack:",
+				Options:  attackNamePromptOptions,
+				PageSize: len(attackNamePromptOptions),
+			}
+			attackName := ""
+			err = survey.AskOne(attackNamePrompt, &attackName, survey.WithValidator(survey.Required))
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
+			// Add attack to attacks array
+			attacks = append(attacks, defaultAttacks.GetAttackByName(attackName))
+			i++
+			continue
+		}
+
+		// Ask for the description of the custom attack
+		customAttackName := ""
+		customAttackPrompt := &survey.Input{
+			Message: "Enter the description for the custom attack:",
+		}
+		err = survey.AskOne(customAttackPrompt, &customAttackName)
+		if err != nil {
+			fmt.Println(err)
 			break
 		}
 
 		// Validate the attack name and get the attack parameters using OpenAI API
-		validAttack, err := validateAttackName(attackName)
+		validAttack, err := validateAttackName(customAttackName)
 		if err != nil {
 			fmt.Printf("Error validating attack name: %s\n", err)
 			continue
@@ -277,6 +281,7 @@ func CreateFighter() *Fighter {
 		IntelligenceInstinctBalance: float32(answers.IntelligenceInstinctBalance) - (float32(answers.Age)-39)/10,
 		CurrentHealth:               100,
 		MaxHealth:                   100,
+		Attacks:                     attacks,
 	}
 
 	fighter.DamageBonus = (fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance - 4) * 10
@@ -338,13 +343,6 @@ func validateAttackName(attackName string) (bool, error) {
 	// Send the prompt to OpenAI API and get the response
 	prompt := fmt.Sprintf(promptTemplate, attackName)
 
-	/* 	req := openai.CompletionRequest{
-	   		Model:     openai.GPT4,
-	   		MaxTokens: 3,
-	   		Prompt:    prompt,
-	   	}
-	   	response, err := client.CreateCompletion(context.Background(), req) */
-
 	response, err := client.CreateChatCompletion(
 		context.Background(),
 
@@ -377,33 +375,6 @@ func validateAttackName(attackName string) (bool, error) {
 	} else if strings.Contains(reply, "Multiple") {
 		return false, errors.New("Attack is valid, but not a single attack")
 	} else if strings.Contains(reply, "Impossible") || strings.Contains(reply, "Valid") {
-		/* 		// Define the prompt template
-		   		promptTemplate := os.Getenv("COG_COMPLEXITY_ATTACK_PROMPT")
-
-		   		// Send the prompt to OpenAI API and get the response
-		   		prompt := fmt.Sprintf(promptTemplate, attackName)
-
-		   		response, err := client.CreateChatCompletion(
-		   			context.Background(),
-		   			openai.ChatCompletionRequest{
-		   				Model:     openai.GPT3Dot5Turbo,
-		   				MaxTokens: 3,
-		   				Messages: []openai.ChatCompletionMessage{
-		   					{
-		   						Role:    openai.ChatMessageRoleUser,
-		   						Content: prompt,
-		   					},
-		   				},
-		   			},
-		   		)
-		   		if err != nil {
-		   			return nil, fmt.Errorf("error sending OpenAI API request: %s", err)
-		   		}
-
-		   		// Parse the response to confirm if attack is valid
-		   		reply := response.Choices[0].Message.Content
-		   		fmt.Println(reply)
-		*/
 		return true, nil
 	}
 
@@ -428,13 +399,6 @@ func getIntegerOpenAIResponse(promptEnvVariable string, promptData string) (int,
 	// Send the prompt to OpenAI API and get the response
 	prompt := fmt.Sprintf(promptTemplate, promptData)
 
-	/* 	req := openai.CompletionRequest{
-	   		Model:     openai.GPT4,
-	   		MaxTokens: 3,
-	   		Prompt:    prompt,
-	   	}
-	   	response, err := client.CreateCompletion(context.Background(), req)
-	*/
 	response, err := client.CreateChatCompletion(
 		context.Background(),
 
@@ -449,17 +413,6 @@ func getIntegerOpenAIResponse(promptEnvVariable string, promptData string) (int,
 			},
 		},
 	)
-	/* 		openai.ChatCompletionRequest{
-			Model:     openai.GPT4,
-			MaxTokens: 3,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: prompt,
-				},
-			},
-		},
-	)*/
 	if err != nil {
 		return 0, fmt.Errorf("Error sending OpenAI API request: %s", err)
 	}
