@@ -5,18 +5,19 @@ type AttackType int
 
 const (
 	Punch AttackType = iota
-	HandStrike
+	Slap
 	Kick
 	KneeStrike
 	ElbowStrike
 	Throw
 	Lock
 	Choke
+	VitalStrike
 	Custom
 )
 
 const (
-	MaxAttackTypes int = 9
+	MaxAttackTypes int = 10
 )
 
 // String returns the string representation of the attack type
@@ -24,8 +25,8 @@ func (at AttackType) String() string {
 	switch at {
 	case Punch:
 		return "Punch"
-	case HandStrike:
-		return "Hand strike"
+	case Slap:
+		return "Slap"
 	case Kick:
 		return "Kick"
 	case KneeStrike:
@@ -38,6 +39,34 @@ func (at AttackType) String() string {
 		return "Lock"
 	case Choke:
 		return "Choke"
+	case VitalStrike:
+		return "Vital strike"
+	case Custom:
+		return "Custom"
+	default:
+		return ""
+	}
+}
+
+// String returns the string representation of the attack type
+func (at AttackType) Hint() string {
+	switch at {
+	case Punch:
+		return "Closed fist attacks, high damage, low complexity, high hit chance, high block chance"
+	case Slap:
+		return "Open fist or back hand attacks, very low damage, low complexity, high hit chance, high block chance"
+	case Kick:
+		return "Leg attacks, high damage, average complexity, high hit chance, high block chance"
+	case KneeStrike:
+		return "Attacks with a knee, very high damage, average complexity, high hit chance, average block chance"
+	case ElbowStrike:
+		return "Attacks with an elbow, very high damage, low complexity, high hit chance, high block chance"
+	case Throw:
+		return "Attacks to knockdown opponent, average damage, average complexity, average hit chance, average block chance, can knockdown opponent"
+	case Lock:
+		return "Grapple attacks to block joint movement, very low damage, high complexity, low hit chance, low block chance, decrease opponent's hit and block chances"
+	case Choke:
+		return "Grapple attacks to block airways, low damage, high complexity, low hit chance, low block chance, decrease opponent's damage and increase complexity"
 	case Custom:
 		return "Custom"
 	default:
@@ -87,13 +116,13 @@ func NewDefaultAttacks() *Attacks {
 	defaultAttacks.AddAttack(&Attack{"Flying Knee", KneeStrike, 85, 85, 60, 55, 70, 45})
 	defaultAttacks.AddAttack(&Attack{"Elbow Strike", ElbowStrike, 75, 35, 70, 65, 60, 15})
 	defaultAttacks.AddAttack(&Attack{"Knee Strike", KneeStrike, 75, 35, 80, 65, 60, 30})
-	defaultAttacks.AddAttack(&Attack{"Palm Heel Strike", HandStrike, 15, 17, 74, 79, 48, 30})
-	defaultAttacks.AddAttack(&Attack{"Hammer Fist", HandStrike, 55, 15, 72, 77, 50, 15})
-	defaultAttacks.AddAttack(&Attack{"Spear Hand", HandStrike, 15, 35, 66, 75, 46, 15})
-	defaultAttacks.AddAttack(&Attack{"Ridge Hand", HandStrike, 15, 37, 68, 73, 54, 15})
-	defaultAttacks.AddAttack(&Attack{"Back Fist", HandStrike, 15, 19, 70, 71, 52, 15})
+	defaultAttacks.AddAttack(&Attack{"Palm Heel Strike", Slap, 15, 17, 74, 79, 48, 30})
+	defaultAttacks.AddAttack(&Attack{"Hammer Fist", Slap, 55, 15, 72, 77, 50, 15})
+	defaultAttacks.AddAttack(&Attack{"Spear Hand", VitalStrike, 15, 35, 66, 75, 46, 15})
+	defaultAttacks.AddAttack(&Attack{"Ridge Hand", VitalStrike, 15, 37, 68, 73, 54, 15})
+	defaultAttacks.AddAttack(&Attack{"Back Fist", Slap, 15, 19, 70, 71, 52, 15})
 	defaultAttacks.AddAttack(&Attack{"Push Kick", Kick, 15, 23, 80, 87, 46, 45})
-	defaultAttacks.AddAttack(&Attack{"Spinning Back Fist", HandStrike, 15, 45, 60, 65, 70, 15})
+	defaultAttacks.AddAttack(&Attack{"Spinning Back Fist", Slap, 15, 45, 60, 65, 70, 15})
 	defaultAttacks.AddAttack(&Attack{"Hip Throw", Throw, 45, 51, 58, 49, 26, 75})
 	defaultAttacks.AddAttack(&Attack{"Shoulder Throw", Throw, 45, 49, 56, 47, 24, 75})
 	defaultAttacks.AddAttack(&Attack{"Foot Sweep", Throw, 45, 47, 54, 51, 18, 75})
@@ -141,6 +170,8 @@ func (attacks *Attacks) GetAttacksByType(attackType AttackType) []*Attack {
 	return attacks.ByType[attackType]
 }
 
+/*
 type Settable interface {
 	WriteAnswer(field string, value interface{}) error
 }
+*/

@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"fmt"
 	"math"
+	"regexp"
 	"strings"
 )
 
@@ -13,18 +15,18 @@ const (
 	Right
 )
 
-func scalePrint(value, min, max float32, colorLeft func(a ...interface{}) string, colorRight func(a ...interface{}) string, length int) string {
+func ScalePrint(value, min, max float32, colorLeft func(a ...interface{}) string, colorRight func(a ...interface{}) string, length int) string {
 	normalizedValue := (value - min) / (max - min)
-	position := int(math.Round(float64(normalizedValue * float32(length-1))))
+	position := int(math.Round(float64(normalizedValue * float32(length))))
 
 	leftString := colorLeft(strings.Repeat(" ", position))
-	middleString := "|"
-	rightString := colorRight(strings.Repeat(" ", length-1-position))
+	//middleString := "|"
+	rightString := colorRight(strings.Repeat(" ", length-position))
 
-	return leftString + middleString + rightString
+	return leftString + rightString
 }
 
-func alignText(text string, size int, optionalArgs ...interface{}) string {
+func AlignText(text string, size int, optionalArgs ...interface{}) string {
 	fillChar := ' '
 	alignment := Center
 
@@ -37,7 +39,8 @@ func alignText(text string, size int, optionalArgs ...interface{}) string {
 		}
 	}
 
-	textLength := len(text)
+	ansiRegex := regexp.MustCompile(`\x1B\[[0-?]*[ -/]*[@-~]`)
+	textLength := len(ansiRegex.ReplaceAllString(text, ""))
 	if textLength >= size {
 		return text
 	}
@@ -59,12 +62,16 @@ func alignText(text string, size int, optionalArgs ...interface{}) string {
 	return strings.Repeat(string(fillChar), leftPadding) + text + strings.Repeat(string(fillChar), rightPadding)
 }
 
-func boxPrint(minWidth int, colorFunc func(a ...interface{}) string, lines []string) []string {
+func BoxPrint(minWidth int, colorFunc func(a ...interface{}) string, lines []string) []string {
 	maxWidth := minWidth
 
 	for _, line := range lines {
-		if len(line) > maxWidth {
-			maxWidth = len(line)
+		ansiRegex := regexp.MustCompile(`\x1B\[[0-?]*[ -/]*[@-~]`)
+		pureLine := ansiRegex.ReplaceAllString(line, "")
+		if len(pureLine) > maxWidth {
+			maxWidth = len(pureLine)
+			fmt.Println("line=", pureLine)
+			fmt.Println("maxWidth=", maxWidth)
 		}
 	}
 
@@ -77,7 +84,7 @@ func boxPrint(minWidth int, colorFunc func(a ...interface{}) string, lines []str
 
 	box := []string{topBorder}
 	for _, line := range lines {
-		box = append(box, spacer+" "+alignText(line, maxWidth)+spacer)
+		box = append(box, spacer+" "+AlignText(line, maxWidth)+" "+spacer)
 	}
 	box = append(box, bottomBorder)
 

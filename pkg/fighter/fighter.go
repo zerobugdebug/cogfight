@@ -12,8 +12,12 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/fatih/color"
 	"github.com/sashabaranov/go-openai"
+
 	"github.com/zerobugdebug/cogfight/pkg/attack"
+	"github.com/zerobugdebug/cogfight/pkg/ui"
+
 )
 
 const (
@@ -41,6 +45,12 @@ type Fighter struct {
 	CurrentHealth               int
 	MaxHealth                   int
 }
+
+
+func (f *Fighter) ApplyAttack(opponent *Fighter, attack *attack.Attack) {
+
+}
+
 
 func (f *Fighter) DisplayFighter() {
 	topBorder := "╔══════════════════════════════════════════════════════════╗"
@@ -74,6 +84,137 @@ func (f *Fighter) DisplayFighter() {
 	fmt.Printf("║ Max Health: %-44d ║\n", f.MaxHealth)
 	fmt.Println(spacer)
 	fmt.Println(bottomBorder)
+}
+
+func DisplayFighters(f1, f2 *Fighter) {
+	//boxWidth := 50
+	numSpacesBetweenFighters := 4
+	spaceBetweenFighters := strings.Repeat(" ", numSpacesBetweenFighters)
+	var scaleRange float32 = 8.00
+	scaleSize := 16
+
+	/*
+		blue := color.New(color.FgBlue).SprintFunc()
+		red := color.New(color.FgRed).SprintFunc()
+
+		topBorder := "╔" + strings.Repeat("═", boxWidth-2) + "╗"
+		bottomBorder := "╚" + strings.Repeat("═", boxWidth-2) + "╝"
+		spacer := "║" + strings.Repeat(" ", boxWidth-2) + "║"
+		spaceBetweenFighters := strings.Repeat(" ", numSpacesBetweenFighters)
+
+		leftTopBorder := blue(topBorder)
+		rightTopBorder := red(topBorder)
+		leftBottomBorder := blue(bottomBorder)
+		rightBottomBorder := red(bottomBorder)
+		leftSpacer := blue(spacer)
+		rightSpacer := red(spacer)
+		leftEdge := blue("║")
+		rightEdge := red("║")
+	*/
+	/* 	valueFormat
+	   	leftFormat := blue("║") + " %-" + strconv.Itoa(halfBoxWidth-4) + "s: %-" + strconv.Itoa(halfBoxWidth-16) + "v " + blue("║") + SpaceBetweenFighters
+	   	rightFormat := "║ %-" + strconv.Itoa(halfBoxWidth-4) + "s: %-" + strconv.Itoa(halfBoxWidth-16) + "v ║"
+	   	headerFormat := "║ %-" + strconv.Itoa(halfBoxWidth-4) + "s: %-" + strconv.Itoa(halfBoxWidth-16) + "s ║"
+	*/
+	// ... (previous code)
+	/*
+		for i, param := range parameters {
+			fmt.Printf(leftFormat+rightFormat+"\n", param, values1[i], param, values2[i])
+		}
+	*/
+	blue := color.New(color.BgBlue).SprintFunc()
+	red := color.New(color.BgRed).SprintFunc()
+	hired := color.New(color.BgHiRed).SprintFunc()
+	hiblue := color.New(color.BgHiBlue).SprintFunc()
+	hiblack := color.New(color.BgHiBlack).SprintFunc()
+	//green := color.New(color.BgGreen).SprintFunc()
+	higreen := color.New(color.BgHiGreen).SprintFunc()
+
+	textLeft := []string{}
+	textLeft = append(textLeft, "Name: "+f1.Name)
+	textLeft = append(textLeft, fmt.Sprintf("Height: %d", f1.Height))
+	textLeft = append(textLeft, fmt.Sprintf("Weight: %d", f1.Weight))
+	textLeft = append(textLeft, fmt.Sprintf("Age: %d", f1.Age))
+	textLeft = append(textLeft, "")
+	textLeft = append(textLeft, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Agility", scaleRange-f1.AgilityStrengthBalance, ui.ScalePrint(-f1.AgilityStrengthBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f1.AgilityStrengthBalance, "Strength"))
+	textLeft = append(textLeft, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Burst", scaleRange-f1.BurstEnduranceBalance, ui.ScalePrint(-f1.BurstEnduranceBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f1.BurstEnduranceBalance, "Endurance"))
+	textLeft = append(textLeft, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Defense", scaleRange-f1.DefenseOffenseBalance, ui.ScalePrint(-f1.DefenseOffenseBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f1.DefenseOffenseBalance, "Offense"))
+	textLeft = append(textLeft, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Speed", scaleRange-f1.SpeedControlBalance, ui.ScalePrint(-f1.SpeedControlBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f1.SpeedControlBalance, "Control"))
+	textLeft = append(textLeft, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Intelligence", scaleRange-f1.IntelligenceInstinctBalance, ui.ScalePrint(-f1.IntelligenceInstinctBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f1.IntelligenceInstinctBalance, "Instinct"))
+	textLeft = append(textLeft, "")
+	textLeft = append(textLeft, fmt.Sprintf("%20s %6.2f%% %v", "Damage Bonus", f1.DamageBonus, ui.ScalePrint(f1.DamageBonus, -100, 100, red, hired, scaleSize)))
+	textLeft = append(textLeft, fmt.Sprintf("%20s %6.2f%% %v", "Complexity Bonus", f1.ComplexityBonus, ui.ScalePrint(f1.ComplexityBonus, -100, 100, red, hired, scaleSize)))
+	textLeft = append(textLeft, fmt.Sprintf("%20s %6.2f%% %v", "Hit Chance Bonus", f1.HitChanceBonus, ui.ScalePrint(f1.HitChanceBonus, -100, 100, red, hired, scaleSize)))
+	textLeft = append(textLeft, fmt.Sprintf("%20s %6.2f%% %v", "Block Chance Bonus", f1.BlockChanceBonus, ui.ScalePrint(f1.BlockChanceBonus, -100, 100, red, hired, scaleSize)))
+	textLeft = append(textLeft, fmt.Sprintf("%20s %6.2f%% %v", "Special Chance Bonus", f1.SpecialChanceBonus, ui.ScalePrint(f1.SpecialChanceBonus, -100, 100, red, hired, scaleSize)))
+	textLeft = append(textLeft, "")
+	textLeft = append(textLeft, fmt.Sprintf("%s %d/%d %v", "Health: ", f1.CurrentHealth, f1.MaxHealth, ui.ScalePrint(float32(f1.CurrentHealth), 0, float32(f1.MaxHealth), hiblue, hiblack, scaleSize*2)))
+	textLeft = append(textLeft, "")
+
+	textRight := []string{}
+	textRight = append(textRight, "Name: "+f2.Name)
+	textRight = append(textRight, fmt.Sprintf("Height: %d", f2.Height))
+	textRight = append(textRight, fmt.Sprintf("Weight: %d", f2.Weight))
+	textRight = append(textRight, fmt.Sprintf("Age: %d", f2.Age))
+	textRight = append(textRight, "")
+	textRight = append(textRight, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Agility", scaleRange-f2.AgilityStrengthBalance, ui.ScalePrint(-f2.AgilityStrengthBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f2.AgilityStrengthBalance, "Strength"))
+	textRight = append(textRight, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Burst", scaleRange-f2.BurstEnduranceBalance, ui.ScalePrint(-f2.BurstEnduranceBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f2.BurstEnduranceBalance, "Endurance"))
+	textRight = append(textRight, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Defense", scaleRange-f2.DefenseOffenseBalance, ui.ScalePrint(-f2.DefenseOffenseBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f2.DefenseOffenseBalance, "Offense"))
+	textRight = append(textRight, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Speed", scaleRange-f2.SpeedControlBalance, ui.ScalePrint(-f2.SpeedControlBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f2.SpeedControlBalance, "Control"))
+	textRight = append(textRight, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Intelligence", scaleRange-f2.IntelligenceInstinctBalance, ui.ScalePrint(-f2.IntelligenceInstinctBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f2.IntelligenceInstinctBalance, "Instinct"))
+	textRight = append(textRight, "")
+	textRight = append(textRight, fmt.Sprintf("%20s %6.2f%% %v", "Damage Bonus", f2.DamageBonus, ui.ScalePrint(f2.DamageBonus, -100, 100, red, hired, scaleSize)))
+	textRight = append(textRight, fmt.Sprintf("%20s %6.2f%% %v", "Complexity Bonus", f2.ComplexityBonus, ui.ScalePrint(f2.ComplexityBonus, -100, 100, red, hired, scaleSize)))
+	textRight = append(textRight, fmt.Sprintf("%20s %6.2f%% %v", "Hit Chance Bonus", f2.HitChanceBonus, ui.ScalePrint(f2.HitChanceBonus, -100, 100, red, hired, scaleSize)))
+	textRight = append(textRight, fmt.Sprintf("%20s %6.2f%% %v", "Block Chance Bonus", f2.BlockChanceBonus, ui.ScalePrint(f2.BlockChanceBonus, -100, 100, red, hired, scaleSize)))
+	textRight = append(textRight, fmt.Sprintf("%20s %6.2f%% %v", "Special Chance Bonus", f2.SpecialChanceBonus, ui.ScalePrint(f2.SpecialChanceBonus, -100, 100, red, hired, scaleSize)))
+	textRight = append(textRight, "")
+
+	textRight = append(textRight, fmt.Sprintf("%s %d/%d %v", "Health: ", f2.CurrentHealth, f2.MaxHealth, ui.ScalePrint(float32(f2.CurrentHealth), 0, float32(f2.MaxHealth), hiblue, hiblack, scaleSize*2)))
+	textRight = append(textRight, "")
+
+	boxLeft := ui.BoxPrint(20, blue, textLeft)
+	boxRight := ui.BoxPrint(20, red, textRight)
+
+	for i, v := range boxLeft {
+		fmt.Println(v + spaceBetweenFighters + boxRight[i])
+	}
+
+	//	fmt.Println(leftTopBorder + spaceBetweenFighters + rightTopBorder)
+	//	fmt.Println(leftSpacer + spaceBetweenFighters + rightSpacer)
+	/*	textLeft = " Name: " + f1.Name + strings.Repeat(" ", boxWidth-len(f1.Name)-2-len(" Name: "))
+		textRight = " Name: " + f2.Name + strings.Repeat(" ", boxWidth-len(f2.Name)-2-len(" Name: "))
+		fmt.Println(leftEdge + textLeft + leftEdge + spaceBetweenFighters + rightEdge + textRight + rightEdge)
+		textLeft = " Height: " + strconv.Itoa(f1.Height) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f1.Height))-2-len(" Height: "))
+		textRight = " Height: " + strconv.Itoa(f2.Height) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f2.Height))-2-len(" Height: "))
+		fmt.Println(leftEdge + textLeft + leftEdge + spaceBetweenFighters + rightEdge + textRight + rightEdge)
+		textLeft = " Weight: " + strconv.Itoa(f1.Weight) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f1.Weight))-2-len(" Weight: "))
+		textRight = " Weight: " + strconv.Itoa(f2.Weight) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f2.Weight))-2-len(" Weight: "))
+		fmt.Println(leftEdge + textLeft + leftEdge + spaceBetweenFighters + rightEdge + textRight + rightEdge)
+		textLeft = " Age: " + strconv.Itoa(f1.Age) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f1.Age))-2-len(" Age: "))
+		textRight = " Age: " + strconv.Itoa(f2.Age) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f2.Age))-2-len(" Age: "))
+		fmt.Println(leftEdge + textLeft + leftEdge + spaceBetweenFighters + rightEdge + textRight + rightEdge)
+		textLeft = "Agility " + strconv.FormatFloat(float64(12-f1.AgilityStrengthBalance), 'f', 1, 32) + ui.ScalePrint(f1.AgilityStrengthBalance, -10, 10, color.New(color.BgBlue).SprintFunc(), color.New(color.BgRed).SprintFunc(), 20) + " " + strconv.FormatFloat(float64(8+f1.AgilityStrengthBalance), 'f', 1, 32) + " Strength"
+		textRight = ui.ScalePrint(f2.AgilityStrengthBalance, -10, 10, color.New(color.BgBlue).SprintFunc(), color.New(color.BgRed).SprintFunc(), 20)
+		fmt.Println(leftEdge + textLeft + leftEdge + spaceBetweenFighters + rightEdge + textRight + rightEdge)*/
+	/*	fmt.Println(headerFormat, "Attacks", "Attacks")
+
+		maxAttacks := max(len(f1.Attacks), len(f2.Attacks))
+		for i := 0; i < maxAttacks; i++ {
+			attack1 := " "
+			attack2 := " "
+			if i < len(f1.Attacks) {
+				attack1 = f1.Attacks[i].Name
+			}
+			if i < len(f2.Attacks) {
+				attack2 = f2.Attacks[i].Name
+			}
+			fmt.Printf(leftFormat+rightFormat+"\n", strconv.Itoa(i+1)+". "+attack1, "", strconv.Itoa(i+1)+". "+attack2, "")
+		}
+	*/
+	/* 	fmt.Println(leftSpacer + spaceBetweenFighters + rightSpacer)
+	   	fmt.Println(leftBottomBorder + spaceBetweenFighters + rightBottomBorder) */
+
 }
 
 // validateNumber requires that the number provided was between min and max
@@ -224,7 +365,7 @@ func CreateFighter() *Fighter {
 
 	err := survey.Ask(qs, &answers)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error during the fighter creation:", err)
 		return nil
 	}
 
@@ -235,6 +376,7 @@ func CreateFighter() *Fighter {
 
 	for attackType.String() != "" {
 		attackTypePromptOptions = append(attackTypePromptOptions, attackType.String())
+		//+": "+attackType.Hint())
 		attackType++
 	}
 
@@ -242,43 +384,73 @@ func CreateFighter() *Fighter {
 		Message:  "Select an attack type:",
 		Options:  attackTypePromptOptions,
 		PageSize: attack.MaxAttackTypes,
+		Help:     "Punch: Closed fist attacks, high damage, low complexity, high hit chance, high block chance\nSlap: Open fist or back hand attacks, very low damage, low complexity, high hit chance, high block chance\nKick: Leg attacks, high damage, average complexity, high hit chance, high block chance\nKnee strike: Attacks with a knee, very high damage, average complexity, high hit chance, average block chance\nElbow strike: Attacks with an elbow, very high damage, low complexity, high hit chance, high block chance\nThrow: Attacks to knockdown opponent, average damage, average complexity, average hit chance, average block chance, can knockdown opponent\nLock: Grapple attacks to block joint movement, very low damage, high complexity, low hit chance, low block chance, decrease opponent's hit and block chances\nChoke: Grapple attacks to block airways, low damage, high complexity, low hit chance, low block chance, decrease opponent's damage and increase complexity\nCustom: Custom free text attack",
 	}
+
+	// Create the fighter object
+	fighter := &Fighter{
+		Name:                        answers.Name,
+		Height:                      answers.Height,
+		Weight:                      answers.Weight,
+		Age:                         answers.Age,
+		AgilityStrengthBalance:      float32(answers.AgilityStrengthBalance) + (float32(answers.Weight)-125)/40 + (float32(answers.Height)-185)/15 - 2,
+		BurstEnduranceBalance:       float32(answers.BurstEnduranceBalance) + (float32(answers.Weight)-125)/40 - 2,
+		DefenseOffenseBalance:       float32(answers.DefenseOffenseBalance) + (float32(answers.Height)-185)/15 - 2,
+		SpeedControlBalance:         float32(answers.SpeedControlBalance) + (float32(answers.Weight)-125)/40 + (float32(answers.Height)-185)/15 - 2,
+		IntelligenceInstinctBalance: float32(answers.IntelligenceInstinctBalance) - (float32(answers.Age)-39)/8 - 2,
+		CurrentHealth:               250 + (answers.Weight - 125),
+		MaxHealth:                   250 + (answers.Weight - 125),
+	}
+
+	fighter.DamageBonus = (fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance) * 10
+	fighter.ComplexityBonus = (fighter.AgilityStrengthBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance) * 5
+	fighter.HitChanceBonus = (-fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance + fighter.DefenseOffenseBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance) * 3
+	fighter.BlockChanceBonus = (-fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance - fighter.DefenseOffenseBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance) * 3
+	fighter.CriticalChanceBonus = (fighter.SpeedControlBalance - fighter.IntelligenceInstinctBalance) * 10
+	fighter.SpecialChanceBonus = (fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance) * 10
 
 	defaultAttacks := attack.NewDefaultAttacks()
 	attacks := []*attack.Attack{}
 
 	i := 0
 	for i < numAttacks {
-		// TODO: Add number of attack in the question, like 1 of 3
+		fmt.Printf("Attack %d from %d\n", i+1, numAttacks)
 		attackTypeSelected := 0
 		// Ask for attack type
 		err := survey.AskOne(attackTypePrompt, &attackTypeSelected, survey.WithValidator(survey.Required))
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Error during the attack type selection:", err)
 			break
 		}
 		attackType = attack.AttackType(attackTypeSelected)
-		fmt.Println(defaultAttacks.GetAttacksByType(attackType))
+		fmt.Println("defaultAttacks.GetAttacksByType(attackType)=", defaultAttacks.GetAttacksByType(attackType))
 
 		// If non-custom type, ask for specific attack
 		if attackType != attack.Custom {
 			attackNamePromptOptions := []string{}
 			for _, value := range defaultAttacks.GetAttacksByType(attackType) {
+				//				damage:=clamp(value.Damage+fighter.DamageBonus,)
+				//attackDescription := fmt.Sprintf("%s [DMG: %5.2f, CMP: %5.2f, HIT: %5.2f, BLK: %5.2f, SPC: %5.2f]", value.Name, value.Damage+fighter.DamageBonus, value.Complexity+fighter.ComplexityBonus, value.HitChance+fighter.HitChanceBonus, value.BlockChance+fighter.BlockChanceBonus, value.SpecialChance+fighter.SpecialChanceBonus)
 				attackNamePromptOptions = append(attackNamePromptOptions, value.Name)
 			}
 			attackNamePrompt := &survey.Select{
 				Message:  "Select an attack:",
 				Options:  attackNamePromptOptions,
 				PageSize: len(attackNamePromptOptions),
+				Description: func(value string, index int) string {
+					attack := defaultAttacks.GetAttackByName(value)
+					return fmt.Sprintf("[DMG: %5.2f, CMP: %5.2f, HIT: %5.2f, BLK: %5.2f, SPC: %5.2f]", attack.Damage+fighter.DamageBonus, attack.Complexity+fighter.ComplexityBonus, attack.HitChance+fighter.HitChanceBonus, attack.BlockChance+fighter.BlockChanceBonus, attack.SpecialChance+fighter.SpecialChanceBonus)
+				},
 			}
 			attackName := ""
 			err = survey.AskOne(attackNamePrompt, &attackName, survey.WithValidator(survey.Required))
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println("Error during the attack selection:", err)
 				break
 			}
 			// Add attack to attacks array
 			attacks = append(attacks, defaultAttacks.GetAttackByName(attackName))
+			fmt.Printf("attacks= %v\n", attacks)
 			i++
 			continue
 		}
@@ -289,8 +461,9 @@ func CreateFighter() *Fighter {
 			Message: "Enter the description for the custom attack:",
 		}
 		err = survey.AskOne(customAttackPrompt, &customAttackName)
+		fmt.Println("customAttackName=" + customAttackName)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Error during the custom attack creation:", err)
 			break
 		}
 
@@ -302,37 +475,27 @@ func CreateFighter() *Fighter {
 		}
 
 		if validAttack {
-			complexityValue, err := getIntegerOpenAIResponse("COG_COMPLEXITY_ATTACK_PROMPT", customAttackName)
+			fmt.Println("Valid attack")
+			customAttackType, err := getOpenAIResponse("COG_TYPE_ATTACK_PROMPT", customAttackName)
 			if err != nil {
 				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
 				continue
 			}
-			fmt.Println("complexityValue=", complexityValue)
+			fmt.Println("customAttackType=", customAttackType.(string))
+
+			complexityValue, err := getOpenAIResponse("COG_COMPLEXITY_ATTACK_PROMPT", customAttackName)
+			if err != nil {
+				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
+				continue
+			}
+			fmt.Println("complexityValue=", complexityValue.(int))
 		}
 	}
+	fmt.Printf("attacks_outside= %v\n", attacks)
 
-	// Create the fighter object
-	fighter := &Fighter{
-		Name:                        answers.Name,
-		Height:                      answers.Height,
-		Weight:                      answers.Weight,
-		Age:                         answers.Age,
-		AgilityStrengthBalance:      float32(answers.AgilityStrengthBalance) + (float32(answers.Weight)-125)/50 + (float32(answers.Height)-185)/20,
-		BurstEnduranceBalance:       float32(answers.BurstEnduranceBalance) + (float32(answers.Weight)-125)/50,
-		DefenseOffenseBalance:       float32(answers.DefenseOffenseBalance) + (float32(answers.Height)-185)/20,
-		SpeedControlBalance:         float32(answers.SpeedControlBalance) + (float32(answers.Weight)-125)/50 + (float32(answers.Height)-185)/20,
-		IntelligenceInstinctBalance: float32(answers.IntelligenceInstinctBalance) - (float32(answers.Age)-39)/10,
-		CurrentHealth:               250 + (answers.Weight - 125),
-		MaxHealth:                   250 + (answers.Weight - 125),
-		Attacks:                     attacks,
-	}
-
-	fighter.DamageBonus = (fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance - 4) * 5
-	fighter.ComplexityBonus = (fighter.AgilityStrengthBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance - 2) * 3
-	fighter.HitChanceBonus = (-fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance + fighter.DefenseOffenseBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance + 2) * 3
-	fighter.BlockChanceBonus = (-fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance - fighter.DefenseOffenseBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance + 2) * 3
-	fighter.CriticalChanceBonus = (fighter.SpeedControlBalance - fighter.IntelligenceInstinctBalance) * 3
-	fighter.SpecialChanceBonus = (fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance) * 3
+	// Create the fighter attacks
+	fighter.Attacks = append(fighter.Attacks, attacks...)
+	fmt.Printf("fighter.Attacks= %v\n", fighter.Attacks)
 
 	fmt.Printf("\n%s has been created!\n", fighter.Name)
 	fighter.DisplayFighter()
@@ -369,30 +532,30 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 		Height:                      answers.Height,
 		Weight:                      answers.Weight,
 		Age:                         answers.Age,
-		AgilityStrengthBalance:      float32(answers.AgilityStrengthBalance) + (float32(answers.Weight)-125)/50 + (float32(answers.Height)-185)/20,
-		BurstEnduranceBalance:       float32(answers.BurstEnduranceBalance) + (float32(answers.Weight)-125)/50,
-		DefenseOffenseBalance:       float32(answers.DefenseOffenseBalance) + (float32(answers.Height)-185)/20,
-		SpeedControlBalance:         float32(answers.SpeedControlBalance) + (float32(answers.Weight)-125)/50 + (float32(answers.Height)-185)/20,
-		IntelligenceInstinctBalance: float32(answers.IntelligenceInstinctBalance) - (float32(answers.Age)-39)/10,
+		AgilityStrengthBalance:      float32(answers.AgilityStrengthBalance) + (float32(answers.Weight)-125)/40 + (float32(answers.Height)-185)/15 - 2,
+		BurstEnduranceBalance:       float32(answers.BurstEnduranceBalance) + (float32(answers.Weight)-125)/40 - 2,
+		DefenseOffenseBalance:       float32(answers.DefenseOffenseBalance) + (float32(answers.Height)-185)/15 - 2,
+		SpeedControlBalance:         float32(answers.SpeedControlBalance) + (float32(answers.Weight)-125)/40 + (float32(answers.Height)-185)/15 - 2,
+		IntelligenceInstinctBalance: float32(answers.IntelligenceInstinctBalance) - (float32(answers.Age)-39)/8 - 2,
 		Attacks:                     []*attack.Attack{},
 		CurrentHealth:               250 + (answers.Weight - 125),
 		MaxHealth:                   250 + (answers.Weight - 125),
 	}
 
-	computerFighter.DamageBonus = (computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - 4) * 5
-	computerFighter.ComplexityBonus = (computerFighter.AgilityStrengthBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance - 2) * 3
-	computerFighter.HitChanceBonus = (-computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance + computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance + 2) * 3
-	computerFighter.BlockChanceBonus = (-computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance + 2) * 3
-	computerFighter.CriticalChanceBonus = (computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance) * 3
-	computerFighter.SpecialChanceBonus = (computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance) * 3
+	computerFighter.DamageBonus = (computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance) * 10
+	computerFighter.ComplexityBonus = (computerFighter.AgilityStrengthBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 5
+	computerFighter.HitChanceBonus = (-computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance + computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 3
+	computerFighter.BlockChanceBonus = (-computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 3
+	computerFighter.CriticalChanceBonus = (computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance) * 10
+	computerFighter.SpecialChanceBonus = (computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance) * 10
 
 	defaultAttacks := attack.NewDefaultAttacks()
 	for range playerFighter.Attacks {
 		attacksList := defaultAttacks.GetAttacksByType(attack.AttackType(rand.Intn(attack.MaxAttackTypes - 1)))
-		fmt.Println(attacksList)
-		fmt.Println(len(attacksList))
+		fmt.Println("attacksList=", attacksList)
+		fmt.Println("len(attacksList)=", len(attacksList))
 		computerAttack := attacksList[rand.Intn(len(attacksList))]
-		fmt.Println(computerAttack)
+		fmt.Println("computerAttack=", computerAttack)
 		computerFighter.Attacks = append(computerFighter.Attacks, computerAttack)
 	}
 
@@ -403,51 +566,57 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 
 // validateAttackName validates the given attack name using OpenAI API and returns the attack parameters
 func validateAttackName(attackName string) (bool, error) {
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		return false, fmt.Errorf("OpenAI API key not found in environment variable OPENAI_API_KEY")
-	}
 
-	client := openai.NewClient(apiKey)
-
-	// Define the prompt template
-	promptTemplate := os.Getenv("COG_VALIDATION_ATTACK_PROMPT")
-
-	// Send the prompt to OpenAI API and get the response
-	prompt := fmt.Sprintf(promptTemplate, attackName)
-
-	response, err := client.CreateChatCompletion(
-		context.Background(),
-
-		openai.ChatCompletionRequest{
-			Model:     openai.GPT4,
-			MaxTokens: 3,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: prompt,
-				},
-			},
-		},
-	)
+	attackValidation, err := getOpenAIResponse("COG_VALIDATION_ATTACK_PROMPT", attackName)
 	if err != nil {
 		return false, fmt.Errorf("error sending OpenAI API request: %s", err)
 	}
+	/* 	apiKey := os.Getenv("OPENAI_API_KEY")
+	   	if apiKey == "" {
+	   		return false, fmt.Errorf("OpenAI API key not found in environment variable OPENAI_API_KEY")
+	   	}
 
-	fmt.Println(response.Choices[0].Message.Content)
-	// Parse the response and extract integer answer
-	reply := response.Choices[0].Message.Content
+	   	client := openai.NewClient(apiKey)
 
-	// Parse the response to confirm if attack is valid
-	//reply := response.Choices[0].Message.Content
-	client = nil
-	fmt.Println(reply)
+	   	// Define the prompt template
+	   	promptTemplate := os.Getenv("COG_VALIDATION_ATTACK_PROMPT")
+
+	   	// Send the prompt to OpenAI API and get the response
+	   	prompt := fmt.Sprintf(promptTemplate, attackName)
+
+	   	response, err := client.CreateChatCompletion(
+	   		context.Background(),
+
+	   		openai.ChatCompletionRequest{
+	   			Model:     openai.GPT3Dot5Turbo,
+	   			MaxTokens: 3,
+	   			Messages: []openai.ChatCompletionMessage{
+	   				{
+	   					Role:    openai.ChatMessageRoleUser,
+	   					Content: prompt,
+	   				},
+	   			},
+	   		},
+	   	)
+	   	if err != nil {
+	   		return false, fmt.Errorf("error sending OpenAI API request: %s", err)
+	   	}
+
+	   	fmt.Println(response.Choices[0].Message.Content)
+	   	// Parse the response and extract integer answer
+	   	reply := response.Choices[0].Message.Content
+
+	   	// Parse the response to confirm if attack is valid
+	   	//reply := response.Choices[0].Message.Content
+	   	client = nil
+	*/fmt.Println("attackValidation=", attackValidation)
+	reply := attackValidation.(string)
 
 	if strings.Contains(reply, "Invalid") {
 		return false, errors.New("Not a valid attack")
-	} else if strings.Contains(reply, "Multiple") {
-		return false, errors.New("Attack is valid, but not a single attack")
-	} else if strings.Contains(reply, "Impossible") || strings.Contains(reply, "Valid") {
+		// } else if strings.Contains(reply, "Multiple") {
+		// 	return false, errors.New("Attack is valid, but not a single attack")
+	} else if strings.Contains(reply, "Impossible") || strings.Contains(reply, "Valid") || strings.Contains(reply, "Multiple") {
 		return true, nil
 	}
 
@@ -455,7 +624,7 @@ func validateAttackName(attackName string) (bool, error) {
 }
 
 // Get integer answer from OpenAI API
-func getIntegerOpenAIResponse(promptEnvVariable string, promptData string) (int, error) {
+func getOpenAIResponse(promptEnvVariable string, promptData string) (interface{}, error) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		return 0, fmt.Errorf("OpenAI API key not found in environment variable OPENAI_API_KEY")
@@ -476,8 +645,8 @@ func getIntegerOpenAIResponse(promptEnvVariable string, promptData string) (int,
 		context.Background(),
 
 		openai.ChatCompletionRequest{
-			Model:     openai.GPT4,
-			MaxTokens: 3,
+			Model:     openai.GPT3Dot5Turbo,
+			MaxTokens: 1000,
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleUser,
@@ -490,15 +659,22 @@ func getIntegerOpenAIResponse(promptEnvVariable string, promptData string) (int,
 		return 0, fmt.Errorf("Error sending OpenAI API request: %s", err)
 	}
 
-	fmt.Println(response.Choices[0].Message.Content)
+	fmt.Println("response.Choices[0].Message.Content=", response.Choices[0].Message.Content)
 	// Parse the response and extract integer answer
 	reply := response.Choices[0].Message.Content
 	re := regexp.MustCompile(`\[\[(\d+)\]\]`)
-	match := re.FindStringSubmatch(reply)
-	fmt.Println(match)
-	if len(match) > 1 {
-		fmt.Println("Number:", match[1])
-		return strconv.Atoi(match[1])
+	matchInt := re.FindStringSubmatch(reply)
+	fmt.Println("matchInt=", matchInt)
+	if len(matchInt) > 1 {
+		fmt.Println("Number:", matchInt[1])
+		return strconv.Atoi(matchInt[1])
+	}
+	re = regexp.MustCompile(`\[\[(\w+)\]\]`)
+	matchString := re.FindStringSubmatch(reply)
+	fmt.Println("matchString=", matchString)
+	if len(matchString) > 1 {
+		fmt.Println("String:", matchString[1])
+		return matchString[1], nil
 	}
 
 	return 0, fmt.Errorf("Can't parse OpenAI API response: %s", reply)
