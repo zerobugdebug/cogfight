@@ -10,22 +10,6 @@ import (
 
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/fighter"
-
-)
-
-const (
-	MaxHitChance         float32 = 95
-	MinHitChance                 = 5
-	MaxBlockChance               = 95
-	MinBlockChance               = 5
-	MaxComplexity                = 95
-	MinComplexity                = 5
-	MaxCriticalHitChance         = 95
-	MinCriticalHitChance         = 5
-	MaxSpecialChance             = 95
-	MinSpecialChance             = 5
-	MinDamage                    = 5
-	MaxDamage                    = 100
 )
 
 // Color constants
@@ -37,16 +21,6 @@ const (
 	clrGoodMessage string = "\033[32m"
 	clrBadMessage  string = "\033[31m"
 )
-
-func clamp(val, min, max float32) float32 {
-	if val < min {
-		return min
-	} else if val > max {
-		return max
-	} else {
-		return val
-	}
-}
 
 // Fight represents the fight match between two fighters
 func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fighter.Fighter {
@@ -97,40 +71,41 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 			selectedAttack = attacker.Attacks[rand.Intn(3)]
 		}
 		fmt.Printf("Selected attack: %s\n", color.CyanString(selectedAttack.Name))
+		attacker.ApplyAttack(defender, selectedAttack)
 
-		// Determine the skill of the attacked
-		attackComplexity := clamp((selectedAttack.Complexity+attacker.ComplexityBonus)/3, MinComplexity, MaxComplexity)
-		fmt.Printf("Current Complexity: %.1f%%\n", attackComplexity)
-		if 100*rand.Float32() > attackComplexity {
-			fmt.Println("Attack performed flawlessly!")
-			// Determine the attack hit chance
-			attackHitChance := clamp(selectedAttack.HitChance+attacker.HitChanceBonus, MinHitChance, MaxHitChance)
-			fmt.Printf("Current Hit Chance: %.1f%%\n", attackHitChance)
-			if 100*rand.Float32() < attackHitChance {
-				fmt.Println("Successfull hit!")
-				attackBlockChance := clamp(selectedAttack.BlockChance+defender.BlockChanceBonus, MinBlockChance, MaxBlockChance)
-				fmt.Printf("Current Block Chance: %.1f%%\n", attackBlockChance)
-				if 100*rand.Float32() > attackBlockChance {
-					fmt.Println("Attack not blocked!")
-					attackDamage := clamp(selectedAttack.Damage+attacker.DamageBonus, MinDamage, MaxDamage)
-					attackCriticalChance := clamp(selectedAttack.CriticalChance+attacker.CriticalChanceBonus, MinCriticalHitChance, MaxCriticalHitChance)
-					fmt.Printf("Current Critical Chance: %.1f%%\n", attackBlockChance)
-					if 100*rand.Float32() > attackCriticalChance {
-						fmt.Println(clrDamage, "Critical hit!", clrReset)
-						attackDamage = clamp(attackDamage*2, MinDamage, MaxDamage)
-					}
-					fmt.Printf("Damage dealt: %s%.1f%s\n", clrDamage, attackDamage, clrReset)
-					defender.CurrentHealth -= int(attackDamage)
-					fmt.Printf("%s%s takes %d damage! (%d/%d)%s\n", clrBadMessage, defender.Name, int(attackDamage), defender.CurrentHealth, defender.MaxHealth, clrReset)
-				} else {
-					fmt.Println("Attack blocked!")
-				}
-			} else {
-				fmt.Println("Missed!")
-			}
-		} else {
-			fmt.Println(clrBadMessage+attacker.Name, "failed to execute attack!"+clrReset)
-		}
+		/* 		// Determine the skill of the attacked
+		   		attackComplexity := clamp((selectedAttack.Complexity+attacker.ComplexityBonus)/3, MinComplexity, MaxComplexity)
+		   		fmt.Printf("Current Complexity: %.1f%%\n", attackComplexity)
+		   		if 100*rand.Float32() > attackComplexity {
+		   			fmt.Println("Attack performed flawlessly!")
+		   			// Determine the attack hit chance
+		   			attackHitChance := clamp(selectedAttack.HitChance+attacker.HitChanceBonus, MinHitChance, MaxHitChance)
+		   			fmt.Printf("Current Hit Chance: %.1f%%\n", attackHitChance)
+		   			if 100*rand.Float32() < attackHitChance {
+		   				fmt.Println("Successfull hit!")
+		   				attackBlockChance := clamp(selectedAttack.BlockChance+defender.BlockChanceBonus, MinBlockChance, MaxBlockChance)
+		   				fmt.Printf("Current Block Chance: %.1f%%\n", attackBlockChance)
+		   				if 100*rand.Float32() > attackBlockChance {
+		   					fmt.Println("Attack not blocked!")
+		   					attackDamage := clamp(selectedAttack.Damage+attacker.DamageBonus, MinDamage, MaxDamage)
+		   					attackCriticalChance := clamp(selectedAttack.CriticalChance+attacker.CriticalChanceBonus, MinCriticalHitChance, MaxCriticalHitChance)
+		   					fmt.Printf("Current Critical Chance: %.1f%%\n", attackBlockChance)
+		   					if 100*rand.Float32() > attackCriticalChance {
+		   						fmt.Println(clrDamage, "Critical hit!", clrReset)
+		   						attackDamage = clamp(attackDamage*2, MinDamage, MaxDamage)
+		   					}
+		   					fmt.Printf("Damage dealt: %s%.1f%s\n", clrDamage, attackDamage, clrReset)
+		   					defender.CurrentHealth -= int(attackDamage)
+		   					fmt.Printf("%s%s takes %d damage! (%d/%d)%s\n", clrBadMessage, defender.Name, int(attackDamage), defender.CurrentHealth, defender.MaxHealth, clrReset)
+		   				} else {
+		   					fmt.Println("Attack blocked!")
+		   				}
+		   			} else {
+		   				fmt.Println("Missed!")
+		   			}
+		   		} else {
+		   			fmt.Println(clrBadMessage+attacker.Name, "failed to execute attack!"+clrReset)
+		   		} */
 
 		// Switch to the next turn
 		currentTurn++

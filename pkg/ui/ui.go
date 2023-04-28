@@ -5,6 +5,7 @@ import (
 	"math"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 )
 
 type Alignment int
@@ -26,6 +27,15 @@ func ScalePrint(value, min, max float32, colorLeft func(a ...interface{}) string
 	return leftString + rightString
 }
 
+func DoubleScalePrint(value, min, center, max float32, colorLeft func(a ...interface{}) string, colorRight func(a ...interface{}) string, colorBack func(a ...interface{}) string, length int) string {
+
+	if value >= center {
+		return ScalePrint(center, min, center, colorBack, colorLeft, length/2) + colorRight("\x1B[30m│\x1B[0m") + ScalePrint(value, center, max, colorRight, colorBack, length/2)
+	} else {
+		return ScalePrint(value, min, center, colorBack, colorLeft, length/2) + colorLeft("\x1B[30m│\x1B[0m") + ScalePrint(center, center, max, colorRight, colorBack, length/2)
+	}
+}
+
 func AlignText(text string, size int, optionalArgs ...interface{}) string {
 	fillChar := ' '
 	alignment := Center
@@ -40,7 +50,7 @@ func AlignText(text string, size int, optionalArgs ...interface{}) string {
 	}
 
 	ansiRegex := regexp.MustCompile(`\x1B\[[0-?]*[ -/]*[@-~]`)
-	textLength := len(ansiRegex.ReplaceAllString(text, ""))
+	textLength := utf8.RuneCountInString(ansiRegex.ReplaceAllString(text, ""))
 	if textLength >= size {
 		return text
 	}
@@ -68,7 +78,7 @@ func BoxPrint(minWidth int, colorFunc func(a ...interface{}) string, lines []str
 	for _, line := range lines {
 		ansiRegex := regexp.MustCompile(`\x1B\[[0-?]*[ -/]*[@-~]`)
 		pureLine := ansiRegex.ReplaceAllString(line, "")
-		if len(pureLine) > maxWidth {
+		if utf8.RuneCountInString(pureLine) > maxWidth {
 			maxWidth = len(pureLine)
 			fmt.Println("line=", pureLine)
 			fmt.Println("maxWidth=", maxWidth)
