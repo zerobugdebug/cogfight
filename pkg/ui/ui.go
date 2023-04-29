@@ -100,3 +100,16 @@ func BoxPrint(minWidth int, colorFunc func(a ...interface{}) string, lines []str
 
 	return box
 }
+
+func ColorModifiedValue(old, new float32, colorMore func(a ...interface{}) string, colorLess func(a ...interface{}) string) string {
+	if int((old-new)*100) > 0 {
+		return colorLess(fmt.Sprintf("%.2f", new))
+	} else {
+		if int((old-new)*100) < 0 {
+			return colorMore(fmt.Sprintf("%.2f", new))
+		} else {
+
+			return fmt.Sprintf("%.2f", old)
+		}
+	}
+}

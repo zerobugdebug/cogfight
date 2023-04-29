@@ -1,5 +1,24 @@
 package attack
 
+import (
+	"github.com/zerobugdebug/cogfight/pkg/modifiers"
+)
+
+const (
+	MaxHitChance         float32 = 99
+	MinHitChance                 = 1
+	MaxBlockChance               = 95
+	MinBlockChance               = 0
+	MaxComplexity                = 95
+	MinComplexity                = 0
+	MaxCriticalHitChance         = 95
+	MinCriticalHitChance         = 5
+	MaxSpecialChance             = 100
+	MinSpecialChance             = 5
+	MinDamage                    = 5
+	MaxDamage                    = 1000
+)
+
 // AttackType represents the type of a fighting move
 type AttackType int
 
@@ -48,7 +67,7 @@ func (at AttackType) String() string {
 	}
 }
 
-// String returns the string representation of the attack type
+// Hint returns the string representation of the attack type
 func (at AttackType) Hint() string {
 	switch at {
 	case Punch:
@@ -71,6 +90,32 @@ func (at AttackType) Hint() string {
 		return "Custom"
 	default:
 		return ""
+	}
+}
+
+// String returns the string representation of the attack type
+func (at AttackType) Special() modifiers.Condition {
+	switch at {
+	case Punch:
+		return modifiers.CriticalHit
+	case Slap:
+		return modifiers.Insulted
+	case Kick:
+		return modifiers.CriticalHit
+	case KneeStrike:
+		return modifiers.Bleeding
+	case ElbowStrike:
+		return modifiers.Bleeding
+	case Throw:
+		return modifiers.Prone
+	case Lock:
+		return modifiers.Bruised
+	case Choke:
+		return modifiers.Disoriented
+	case VitalStrike:
+		return modifiers.Paralysed
+	default:
+		return modifiers.Healthy
 	}
 }
 
@@ -100,56 +145,57 @@ func NewAttacks() *Attacks {
 
 func NewDefaultAttacks() *Attacks {
 	defaultAttacks := NewAttacks()
-	defaultAttacks.AddAttack(&Attack{"Jab", Punch, 15, 14, 80, 87, 48, 15})
-	defaultAttacks.AddAttack(&Attack{"Cross", Punch, 55, 15, 78, 85, 52, 15})
-	defaultAttacks.AddAttack(&Attack{"Hook", Punch, 65, 16, 70, 83, 58, 15})
-	defaultAttacks.AddAttack(&Attack{"Uppercut", Punch, 65, 17, 68, 81, 70, 15})
-	defaultAttacks.AddAttack(&Attack{"Front Kick", Kick, 65, 25, 82, 85, 48, 45})
-	defaultAttacks.AddAttack(&Attack{"Roundhouse Kick", Kick, 75, 27, 78, 75, 60, 45})
-	defaultAttacks.AddAttack(&Attack{"Side Kick", Kick, 65, 29, 70, 73, 54, 30})
-	defaultAttacks.AddAttack(&Attack{"Spinning Back Kick", Kick, 75, 45, 58, 55, 70, 45})
-	defaultAttacks.AddAttack(&Attack{"Axe Kick", Kick, 55, 33, 62, 67, 52, 30})
-	defaultAttacks.AddAttack(&Attack{"Hook Kick", Kick, 55, 37, 60, 65, 50, 15})
-	defaultAttacks.AddAttack(&Attack{"Crescent Kick", Kick, 55, 35, 64, 77, 40, 15})
-	defaultAttacks.AddAttack(&Attack{"Spinning Heel Kick", Kick, 85, 47, 56, 53, 72, 15})
-	defaultAttacks.AddAttack(&Attack{"Superman Punch", Punch, 85, 45, 60, 55, 62, 30})
-	defaultAttacks.AddAttack(&Attack{"Flying Knee", KneeStrike, 85, 85, 60, 55, 70, 45})
-	defaultAttacks.AddAttack(&Attack{"Elbow Strike", ElbowStrike, 75, 35, 70, 65, 60, 15})
-	defaultAttacks.AddAttack(&Attack{"Knee Strike", KneeStrike, 75, 35, 80, 65, 60, 30})
-	defaultAttacks.AddAttack(&Attack{"Palm Heel Strike", Slap, 15, 17, 74, 79, 48, 30})
-	defaultAttacks.AddAttack(&Attack{"Hammer Fist", Slap, 55, 15, 72, 77, 50, 15})
-	defaultAttacks.AddAttack(&Attack{"Spear Hand", VitalStrike, 15, 35, 66, 75, 46, 15})
-	defaultAttacks.AddAttack(&Attack{"Ridge Hand", VitalStrike, 15, 37, 68, 73, 54, 15})
-	defaultAttacks.AddAttack(&Attack{"Back Fist", Slap, 15, 19, 70, 71, 52, 15})
-	defaultAttacks.AddAttack(&Attack{"Push Kick", Kick, 15, 23, 80, 87, 46, 45})
-	defaultAttacks.AddAttack(&Attack{"Spinning Back Fist", Slap, 15, 45, 60, 65, 70, 15})
-	defaultAttacks.AddAttack(&Attack{"Hip Throw", Throw, 45, 51, 58, 49, 26, 75})
-	defaultAttacks.AddAttack(&Attack{"Shoulder Throw", Throw, 45, 49, 56, 47, 24, 75})
-	defaultAttacks.AddAttack(&Attack{"Foot Sweep", Throw, 45, 47, 54, 51, 18, 75})
-	defaultAttacks.AddAttack(&Attack{"Osoto Gari", Throw, 45, 57, 50, 43, 30, 75})
-	defaultAttacks.AddAttack(&Attack{"Uchi Mata", Throw, 45, 65, 44, 35, 38, 75})
-	defaultAttacks.AddAttack(&Attack{"Seoi Nage", Throw, 45, 59, 52, 45, 34, 75})
-	defaultAttacks.AddAttack(&Attack{"Tai Otoshi", Throw, 45, 61, 46, 41, 32, 75})
-	defaultAttacks.AddAttack(&Attack{"Harai Goshi", Throw, 45, 63, 42, 37, 36, 75})
-	defaultAttacks.AddAttack(&Attack{"Double Leg Takedown", Throw, 45, 45, 80, 55, 22, 75})
-	defaultAttacks.AddAttack(&Attack{"Single Leg Takedown", Throw, 45, 43, 78, 53, 20, 75})
-	defaultAttacks.AddAttack(&Attack{"Fireman's Carry", Throw, 45, 53, 48, 39, 28, 60})
-	defaultAttacks.AddAttack(&Attack{"Suplex", Throw, 45, 55, 40, 33, 40, 60})
-	defaultAttacks.AddAttack(&Attack{"Rear Naked Choke", Choke, 37, 64, 32, 23, 50, 50})
-	defaultAttacks.AddAttack(&Attack{"Guillotine Choke", Choke, 35, 65, 31, 26, 50, 50})
-	defaultAttacks.AddAttack(&Attack{"Triangle Choke", Choke, 36, 75, 29, 24, 50, 50})
-	defaultAttacks.AddAttack(&Attack{"Armbar", Lock, 25, 63, 35, 39, 34, 50})
-	defaultAttacks.AddAttack(&Attack{"Kimura", Lock, 25, 69, 34, 38, 32, 50})
-	defaultAttacks.AddAttack(&Attack{"Americana", Lock, 25, 67, 33, 37, 30, 50})
-	defaultAttacks.AddAttack(&Attack{"Omoplata", Lock, 25, 77, 28, 36, 24, 50})
-	defaultAttacks.AddAttack(&Attack{"Gogoplata", Lock, 25, 85, 20, 17, 22, 50})
-	defaultAttacks.AddAttack(&Attack{"Leg Lock", Lock, 25, 71, 31, 35, 28, 50})
-	defaultAttacks.AddAttack(&Attack{"Anaconda Choke", Choke, 33, 67, 28, 27, 50, 50})
-	defaultAttacks.AddAttack(&Attack{"D'Arce Choke", Choke, 34, 66, 30, 25, 50, 50})
-	defaultAttacks.AddAttack(&Attack{"Heel Hook", Lock, 25, 75, 30, 33, 62, 50})
-	defaultAttacks.AddAttack(&Attack{"Straight Foot Lock", Lock, 25, 65, 32, 34, 26, 50})
-	defaultAttacks.AddAttack(&Attack{"Toe Hold", Lock, 25, 73, 29, 32, 60, 50})
-	defaultAttacks.AddAttack(&Attack{"Flying Armbar", Lock, 25, 83, 20, 15, 20, 50})
+	defaultAttacks.AddAttack(&Attack{"Triangle Choke", Choke, 23, 10, 43.5, 12, 50, 90})
+	defaultAttacks.AddAttack(&Attack{"Anaconda Choke", Choke, 20, 9.5, 42, 13.5, 50, 90})
+	defaultAttacks.AddAttack(&Attack{"D'Arce Choke", Choke, 21, 9, 45, 12.5, 50, 90})
+	defaultAttacks.AddAttack(&Attack{"Guillotine Choke", Choke, 22, 8.5, 46.5, 13, 50, 90})
+	defaultAttacks.AddAttack(&Attack{"Rear Naked Choke", Choke, 24, 8, 48, 11.5, 50, 90})
+	defaultAttacks.AddAttack(&Attack{"Elbow Strike", ElbowStrike, 70, 9, 105, 32.5, 60, 80})
+	defaultAttacks.AddAttack(&Attack{"Spinning Heel Kick", Kick, 85, 7.5, 84, 26.5, 72, 15})
+	defaultAttacks.AddAttack(&Attack{"Spinning Back Kick", Kick, 75, 7, 87, 27.5, 70, 15})
+	defaultAttacks.AddAttack(&Attack{"Roundhouse Kick", Kick, 75, 7, 117, 37.5, 60, 15})
+	defaultAttacks.AddAttack(&Attack{"Side Kick", Kick, 65, 6.5, 105, 36.5, 54, 15})
+	defaultAttacks.AddAttack(&Attack{"Front Kick", Kick, 65, 6.5, 123, 42.5, 48, 15})
+	defaultAttacks.AddAttack(&Attack{"Hook Kick", Kick, 55, 6, 90, 32.5, 50, 15})
+	defaultAttacks.AddAttack(&Attack{"Crescent Kick", Kick, 55, 5.5, 96, 38.5, 40, 15})
+	defaultAttacks.AddAttack(&Attack{"Axe Kick", Kick, 55, 6, 93, 33.5, 52, 15})
+	defaultAttacks.AddAttack(&Attack{"Push Kick", Kick, 15, 2.5, 120, 43.5, 46, 15})
+	defaultAttacks.AddAttack(&Attack{"Flying Knee", KneeStrike, 85, 12.5, 90, 27.5, 70, 80})
+	defaultAttacks.AddAttack(&Attack{"Knee Strike", KneeStrike, 75, 10, 120, 32.5, 60, 80})
+	defaultAttacks.AddAttack(&Attack{"Armbar", Lock, 10, 8.5, 52.5, 19.5, 34, 90})
+	defaultAttacks.AddAttack(&Attack{"Kimura", Lock, 10, 8.5, 51, 19, 32, 90})
+	defaultAttacks.AddAttack(&Attack{"Americana", Lock, 10, 8.5, 49.5, 18.5, 30, 90})
+	defaultAttacks.AddAttack(&Attack{"Straight Foot Lock", Lock, 10, 8.5, 48, 17, 26, 90})
+	defaultAttacks.AddAttack(&Attack{"Leg Lock", Lock, 10, 8.5, 46.5, 17.5, 28, 90})
+	defaultAttacks.AddAttack(&Attack{"Heel Hook", Lock, 10, 8, 45, 16.5, 62, 90})
+	defaultAttacks.AddAttack(&Attack{"Toe Hold", Lock, 10, 8, 43.5, 16, 60, 90})
+	defaultAttacks.AddAttack(&Attack{"Omoplata", Lock, 10, 8, 42, 18, 24, 90})
+	defaultAttacks.AddAttack(&Attack{"Gogoplata", Lock, 10, 10, 30, 8.5, 22, 90})
+	defaultAttacks.AddAttack(&Attack{"Flying Armbar", Lock, 10, 10, 30, 7.5, 20, 90})
+	defaultAttacks.AddAttack(&Attack{"Superman Punch", Punch, 45, 2.5, 112.5, 27.5, 62, 10})
+	defaultAttacks.AddAttack(&Attack{"Uppercut", Punch, 35, 2, 117, 40.5, 70, 10})
+	defaultAttacks.AddAttack(&Attack{"Hook", Punch, 30, 2, 120, 41.5, 58, 10})
+	defaultAttacks.AddAttack(&Attack{"Cross", Punch, 25, 1.5, 124.5, 42.5, 52, 10})
+	defaultAttacks.AddAttack(&Attack{"Jab", Punch, 15, 1, 127.5, 43.5, 48, 10})
+	defaultAttacks.AddAttack(&Attack{"Spinning Back Fist", Slap, 15, 1, 90, 32.5, 70, 100})
+	defaultAttacks.AddAttack(&Attack{"Back Fist", Slap, 15, 1, 105, 35.5, 52, 100})
+	defaultAttacks.AddAttack(&Attack{"Palm Heel Strike", Slap, 15, 1, 111, 39.5, 48, 100})
+	defaultAttacks.AddAttack(&Attack{"Hammer Fist", Slap, 20, 2, 108, 38.5, 50, 100})
+	defaultAttacks.AddAttack(&Attack{"Uchi Mata", Throw, 45, 7.5, 66, 17.5, 38, 90})
+	defaultAttacks.AddAttack(&Attack{"Harai Goshi", Throw, 45, 7.5, 63, 18.5, 36, 90})
+	defaultAttacks.AddAttack(&Attack{"Tai Otoshi", Throw, 45, 7.5, 69, 20.5, 32, 90})
+	defaultAttacks.AddAttack(&Attack{"Seoi Nage", Throw, 42, 7, 78, 22.5, 34, 90})
+	defaultAttacks.AddAttack(&Attack{"Osoto Gari", Throw, 42, 7, 75, 21.5, 30, 90})
+	defaultAttacks.AddAttack(&Attack{"Suplex", Throw, 42, 7.5, 60, 16.5, 40, 90})
+	defaultAttacks.AddAttack(&Attack{"Fireman's Carry", Throw, 42, 7, 72, 19.5, 28, 90})
+	defaultAttacks.AddAttack(&Attack{"Hip Throw", Throw, 42, 6.5, 87, 24.5, 26, 90})
+	defaultAttacks.AddAttack(&Attack{"Shoulder Throw", Throw, 40, 6.5, 84, 23.5, 24, 90})
+	defaultAttacks.AddAttack(&Attack{"Foot Sweep", Throw, 40, 6.5, 81, 25.5, 18, 90})
+	defaultAttacks.AddAttack(&Attack{"Double Leg Takedown", Throw, 40, 5, 120, 27.5, 22, 90})
+	defaultAttacks.AddAttack(&Attack{"Single Leg Takedown", Throw, 40, 5, 117, 26.5, 20, 90})
+	defaultAttacks.AddAttack(&Attack{"Ridge Hand", VitalStrike, 15, 13.5, 102, 36.5, 54, 90})
+	defaultAttacks.AddAttack(&Attack{"Spear Hand", VitalStrike, 15, 12.5, 99, 37.5, 46, 90})
+
 	return defaultAttacks
 
 }
@@ -168,6 +214,16 @@ func (attacks *Attacks) GetAttackByName(name string) *Attack {
 
 func (attacks *Attacks) GetAttacksByType(attackType AttackType) []*Attack {
 	return attacks.ByType[attackType]
+}
+
+func Clamp(val, min, max float32) float32 {
+	if val < min {
+		return min
+	} else if val > max {
+		return max
+	} else {
+		return val
+	}
 }
 
 /*

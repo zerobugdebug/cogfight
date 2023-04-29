@@ -10,6 +10,7 @@ import (
 
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/fighter"
+	"github.com/zerobugdebug/cogfight/pkg/modifiers"
 )
 
 // Color constants
@@ -43,71 +44,76 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 			defender = playerFighter
 		}
 		fighter.DisplayFighters(playerFighter, computerFighter)
-		var selectedAttack *attack.Attack
-		fmt.Printf("\n%sTurn %d: %s attacks %s!%s\n\n", clrGoodMessage, currentTurn, attacker.Name, defender.Name, clrReset)
-		if currentTurn%2 != 0 {
-			attackNamePromptOptions := []string{}
-			for _, value := range attacker.Attacks {
-				attackNamePromptOptions = append(attackNamePromptOptions, value.Name)
-			}
-			attackNamePrompt := &survey.Select{
-				Message:  "Select an attack:",
-				Options:  attackNamePromptOptions,
-				PageSize: len(attackNamePromptOptions),
-				Description: func(value string, index int) string {
-					attack := attacker.Attacks[index]
-					return fmt.Sprintf("[DMG: %5.2f, CMP: %5.2f, HIT: %5.2f, BLK: %5.2f, SPC: %5.2f]", attack.Damage+attacker.DamageBonus, attack.Complexity+attacker.ComplexityBonus, attack.HitChance+attacker.HitChanceBonus, attack.BlockChance+attacker.BlockChanceBonus, attack.SpecialChance+attacker.SpecialChanceBonus)
-				},
-			}
-			attackNumber := 0
-			err := survey.AskOne(attackNamePrompt, &attackNumber, survey.WithValidator(survey.Required))
-			if err != nil {
-				fmt.Println("Error during the attack selection:", err)
-				break
-			}
+		skipTurn := 0
 
-			selectedAttack = attacker.Attacks[attackNumber]
-		} else {
-			selectedAttack = attacker.Attacks[rand.Intn(3)]
+		//Apply pre-turn conditions
+		for condition := range attacker.Conditions {
+			for modifier, value := range modifiers.DefaultConditionAttributes[condition] {
+				switch modifier {
+				case modifiers.SkipTurn:
+					{
+						skipTurn = value
+					}
+				}
+			}
 		}
-		fmt.Printf("Selected attack: %s\n", color.CyanString(selectedAttack.Name))
-		attacker.ApplyAttack(defender, selectedAttack)
 
-		/* 		// Determine the skill of the attacked
-		   		attackComplexity := clamp((selectedAttack.Complexity+attacker.ComplexityBonus)/3, MinComplexity, MaxComplexity)
-		   		fmt.Printf("Current Complexity: %.1f%%\n", attackComplexity)
-		   		if 100*rand.Float32() > attackComplexity {
-		   			fmt.Println("Attack performed flawlessly!")
-		   			// Determine the attack hit chance
-		   			attackHitChance := clamp(selectedAttack.HitChance+attacker.HitChanceBonus, MinHitChance, MaxHitChance)
-		   			fmt.Printf("Current Hit Chance: %.1f%%\n", attackHitChance)
-		   			if 100*rand.Float32() < attackHitChance {
-		   				fmt.Println("Successfull hit!")
-		   				attackBlockChance := clamp(selectedAttack.BlockChance+defender.BlockChanceBonus, MinBlockChance, MaxBlockChance)
-		   				fmt.Printf("Current Block Chance: %.1f%%\n", attackBlockChance)
-		   				if 100*rand.Float32() > attackBlockChance {
-		   					fmt.Println("Attack not blocked!")
-		   					attackDamage := clamp(selectedAttack.Damage+attacker.DamageBonus, MinDamage, MaxDamage)
-		   					attackCriticalChance := clamp(selectedAttack.CriticalChance+attacker.CriticalChanceBonus, MinCriticalHitChance, MaxCriticalHitChance)
-		   					fmt.Printf("Current Critical Chance: %.1f%%\n", attackBlockChance)
-		   					if 100*rand.Float32() > attackCriticalChance {
-		   						fmt.Println(clrDamage, "Critical hit!", clrReset)
-		   						attackDamage = clamp(attackDamage*2, MinDamage, MaxDamage)
-		   					}
-		   					fmt.Printf("Damage dealt: %s%.1f%s\n", clrDamage, attackDamage, clrReset)
-		   					defender.CurrentHealth -= int(attackDamage)
-		   					fmt.Printf("%s%s takes %d damage! (%d/%d)%s\n", clrBadMessage, defender.Name, int(attackDamage), defender.CurrentHealth, defender.MaxHealth, clrReset)
-		   				} else {
-		   					fmt.Println("Attack blocked!")
-		   				}
-		   			} else {
-		   				fmt.Println("Missed!")
-		   			}
-		   		} else {
-		   			fmt.Println(clrBadMessage+attacker.Name, "failed to execute attack!"+clrReset)
-		   		} */
+		if skipTurn != 0 {
+			fmt.Printf("\n%sTurn %d: %s cannot attack, skipping turn!%s\n\n", clrGoodMessage, currentTurn, attacker.Name, clrReset)
+		} else {
+			var selectedAttack *attack.Attack
+			fmt.Printf("\n%sTurn %d: %s attacks %s!%s\n\n", clrGoodMessage, currentTurn, attacker.Name, defender.Name, clrReset)
+			if currentTurn%2 != 0 {
+				attackNamePromptOptions := []string{}
+				for _, value := range attacker.Attacks {
+					attackNamePromptOptions = append(attackNamePromptOptions, value.Name)
+				}
+				attackNamePrompt := &survey.Select{
+					Message:  "Select an attack:",
+					Options:  attackNamePromptOptions,
+					PageSize: len(attackNamePromptOptions),
+					Description: func(value string, index int) string {
+						attack := attacker.Attacks[index]
+						return fmt.Sprintf("[DMG: %5.2f, CMP: %5.2f, HIT: %5.2f, BLK: %5.2f, SPC: %5.2f]", attack.Damage+attacker.DamageBonus, attack.Complexity+attacker.ComplexityBonus, attack.HitChance+attacker.HitChanceBonus, attack.BlockChance+attacker.BlockChanceBonus, attack.SpecialChance+attacker.SpecialChanceBonus)
+					},
+				}
+				attackNumber := 0
+				err := survey.AskOne(attackNamePrompt, &attackNumber, survey.WithValidator(survey.Required))
+				if err != nil {
+					fmt.Println("Error during the attack selection:", err)
+					break
+				}
 
-		// Switch to the next turn
+				selectedAttack = attacker.Attacks[attackNumber]
+			} else {
+				selectedAttack = attacker.Attacks[rand.Intn(3)]
+			}
+			fmt.Printf("Selected attack: %s\n", color.CyanString(selectedAttack.Name))
+			attacker.ApplyAttack(defender, selectedAttack)
+		}
+
+		//Apply post-turn conditions
+		//Calculate effect from attacker conditions
+		for condition := range attacker.Conditions {
+			for modifier, value := range modifiers.DefaultConditionAttributes[condition] {
+				switch modifier {
+				case modifiers.HPPerTurn:
+					{
+						attacker.CurrentHealth += int(value)
+						if int(value) < 0 {
+							fmt.Printf("%s takes %d damage! (%d/%d) due to %s\n", attacker.Name, -int(value), attacker.CurrentHealth, attacker.MaxHealth, condition.String())
+						}
+					}
+				}
+			}
+			attacker.Conditions[condition] -= 1
+			if attacker.Conditions[condition] < 1 {
+				delete(attacker.Conditions, condition)
+				defender.RemoveCondition(attacker, condition)
+			}
+
+		}
+
 		currentTurn++
 		fmt.Scanln()
 	}
