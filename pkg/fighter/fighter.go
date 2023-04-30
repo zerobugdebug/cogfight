@@ -53,6 +53,132 @@ type Fighter struct {
 	MaxHealth                   int
 }
 
+func (f *Fighter) SelectAttack(opponent *Fighter) *attack.Attack {
+	attackType := attack.AttackType(0)
+	attackTypePromptOptions := []string{}
+
+	for attackType.String() != "" {
+		attackTypePromptOptions = append(attackTypePromptOptions, attackType.String())
+		//+": "+attackType.Hint())
+		attackType++
+	}
+
+	attackTypePrompt := &survey.Select{
+		Message:  "Select an attack type:",
+		Options:  attackTypePromptOptions,
+		PageSize: attack.MaxAttackTypes,
+		Help:     "Punch: Closed fist attacks, high damage, low complexity, high hit chance, high block chance\nSlap: Open fist or back hand attacks, very low damage, low complexity, high hit chance, high block chance\nKick: Leg attacks, high damage, average complexity, high hit chance, high block chance\nKnee strike: Attacks with a knee, very high damage, average complexity, high hit chance, average block chance\nElbow strike: Attacks with an elbow, very high damage, low complexity, high hit chance, high block chance\nThrow: Attacks to knockdown opponent, average damage, average complexity, average hit chance, average block chance, can knockdown opponent\nLock: Grapple attacks to block joint movement, very low damage, high complexity, low hit chance, low block chance, decrease opponent's hit and block chances\nChoke: Grapple attacks to block airways, low damage, high complexity, low hit chance, low block chance, decrease opponent's damage and increase complexity\nCustom: Custom free text attack",
+	}
+
+	defaultAttacks := attack.NewDefaultAttacks()
+	attacks := []*attack.Attack{}
+	for _, a := range defaultAttacks.ByName {
+		attacks = append(attacks, a)
+	}
+
+	hiredfg := color.New(color.FgHiRed).SprintFunc()
+	higreenfg := color.New(color.FgHiGreen).SprintFunc()
+
+	for {
+		//fmt.Printf("Attack %d from %d\n", i+1, numAttacks)
+		attackTypeSelected := 0
+		// Ask for attack type
+		err := survey.AskOne(attackTypePrompt, &attackTypeSelected, survey.WithValidator(survey.Required))
+		if err != nil {
+			fmt.Println("Error during the attack type selection:", err)
+			break
+		}
+		attackType = attack.AttackType(attackTypeSelected)
+		fmt.Println("defaultAttacks.GetAttacksByType(attackType)=", defaultAttacks.GetAttacksByType(attackType))
+
+		// If non-custom type, ask for specific attack
+		if attackType != attack.Custom {
+			attackNamePromptOptions := []string{}
+			for _, value := range defaultAttacks.GetAttacksByType(attackType) {
+				attackNamePromptOptions = append(attackNamePromptOptions, value.Name)
+			}
+			attackNamePromptOptions = append(attackNamePromptOptions, "<-Back")
+
+			attackNamePrompt := &survey.Select{
+				Message:  "Select an attack:",
+				Options:  attackNamePromptOptions,
+				PageSize: len(attackNamePromptOptions),
+				Description: func(value string, index int) string {
+					if value != "<-Back" {
+						selectedAttack := defaultAttacks.GetAttackByName(value)
+						damage := ui.ColorModifiedValue(attack.Clamp(selectedAttack.Damage*(1+f.DamageBonus/100+f.TempDamageBonus/100), attack.MinDamage, attack.MaxDamage), f.TempDamageBonus, "%.2f", higreenfg, hiredfg)
+						complexity := ui.ColorModifiedValue(attack.Clamp(selectedAttack.Complexity+f.ComplexityBonus+f.TempComplexityBonus, attack.MinComplexity, attack.MaxComplexity), f.TempComplexityBonus, "%.2f", hiredfg, higreenfg)
+						hitChance := ui.ColorModifiedValue(attack.Clamp(selectedAttack.HitChance+f.HitChanceBonus+f.TempHitChanceBonus, attack.MinHitChance, attack.MaxHitChance), f.TempHitChanceBonus, "%.2f", higreenfg, hiredfg)
+						blockChance := ui.ColorModifiedValue(attack.Clamp(selectedAttack.BlockChance+opponent.BlockChanceBonus+opponent.TempBlockChanceBonus, attack.MinBlockChance, attack.MaxBlockChance), opponent.TempBlockChanceBonus, "%.2f", hiredfg, higreenfg)
+						specialChance := ui.ColorModifiedValue(attack.Clamp(selectedAttack.SpecialChance+f.SpecialChanceBonus+f.TempSpecialChanceBonus, attack.MinSpecialChance, attack.MaxSpecialChance), f.TempSpecialChanceBonus, "%.2f", higreenfg, hiredfg)
+						return fmt.Sprintf("[DMG: %s, CMP: %s, HIT: %s, BLK: %s, SPC: %s]", damage, complexity, hitChance, blockChance, specialChance)
+					}
+					return ""
+				},
+			}
+			attackName := ""
+			err = survey.AskOne(attackNamePrompt, &attackName, survey.WithValidator(survey.Required))
+			if err != nil {
+				fmt.Println("Error during the attack selection:", err)
+				break
+			}
+			if attackName != "<-Back" {
+				// Add attack to attacks array
+				return defaultAttacks.GetAttackByName(attackName)
+			}
+			continue
+		} else {
+			continue
+		}
+	}
+
+	/* 		// Ask for the description of the custom attack
+		customAttackName := ""
+		customAttackPrompt := &survey.Input{
+			Message: "Enter the description for the custom attack:",
+		}
+		err = survey.AskOne(customAttackPrompt, &customAttackName)
+		fmt.Println("customAttackName=" + customAttackName)
+		if err != nil {
+			fmt.Println("Error during the custom attack creation:", err)
+			break
+		}
+
+		// Validate the attack name and get the attack parameters using OpenAI API
+		validAttack, err := validateAttackName(customAttackName)
+		if err != nil {
+			fmt.Printf("Error validating attack name: %s\n", err)
+			continue
+		}
+
+		if validAttack {
+			fmt.Println("Valid attack")
+			customAttackType, err := getOpenAIResponse("COG_TYPE_ATTACK_PROMPT", customAttackName)
+			if err != nil {
+				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
+				continue
+			}
+			fmt.Println("customAttackType=", customAttackType.(string))
+
+			complexityValue, err := getOpenAIResponse("COG_COMPLEXITY_ATTACK_PROMPT", customAttackName)
+			if err != nil {
+				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
+				continue
+			}
+			fmt.Println("complexityValue=", complexityValue.(int))
+		}
+	}
+	fmt.Printf("attacks_outside= %v\n", attacks)
+
+	// Create the fighter attacks
+	fighter.Attacks = append(fighter.Attacks, attacks...)
+	fmt.Printf("fighter.Attacks= %v\n", fighter.Attacks)
+	*/
+
+	return defaultAttacks.ByName["Jab"]
+
+}
+
 func (f *Fighter) AddCondition(opponent *Fighter, condition modifiers.Condition) {
 	//Add temp bonuses/penalties due to opponent condition
 	for modifier, value := range modifiers.DefaultConditionAttributes[condition] {
@@ -164,24 +290,24 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 	// } else {
 	// Determine the skill of the attacked
 	attackComplexity := attack.Clamp(modifiedAttack.Complexity, attack.MinComplexity, attack.MaxComplexity)
-	fmt.Printf("Current Complexity: %.1f%%\n", attackComplexity)
+	fmt.Printf("Current Complexity: %s =>  ", color.HiMagentaString("%.1f%%", attackComplexity))
 	if 100*rand.Float32() > attackComplexity {
-		fmt.Println("Attack performed flawlessly!")
+		color.HiGreen("Attack performed flawlessly!")
 		// Determine the attack hit chance
 		attackHitChance := attack.Clamp(modifiedAttack.HitChance, attack.MinHitChance, attack.MaxHitChance)
-		fmt.Printf("Current Hit Chance: %.1f%%\n", attackHitChance)
+		fmt.Printf("Current Hit Chance: %s => ", color.HiMagentaString("%.1f%%", attackHitChance))
 		if 100*rand.Float32() < attackHitChance || sureStrike == 1 {
-			fmt.Println("Successfull hit!")
+			color.HiGreen("Successfull hit!")
 			attackBlockChance := attack.Clamp(modifiedAttack.BlockChance, attack.MinBlockChance, attack.MaxBlockChance)
-			fmt.Printf("Current Block Chance: %.1f%%\n", attackBlockChance)
+			fmt.Printf("Current Block Chance: %s => ", color.HiMagentaString("%.1f%%", attackBlockChance))
 			if 100*rand.Float32() > attackBlockChance || sureStrike == 1 {
-				fmt.Println("Attack not blocked!")
+				color.HiGreen("Attack not blocked!")
 				attackDamage = attack.Clamp(modifiedAttack.Damage, attack.MinDamage, attack.MaxDamage)
 				attackSpecialChance := attack.Clamp(modifiedAttack.SpecialChance, attack.MinSpecialChance, attack.MaxSpecialChance)
-				fmt.Printf("Current Special Chance: %.1f%%\n", attackSpecialChance)
-				fmt.Printf("Current Special: %s\n", modifiedAttack.Type.Special().ActionString())
+				fmt.Printf("Current Special: %s, %s => ", color.HiBlueString(modifiedAttack.Type.Special().ActionString()), color.HiMagentaString("%.1f%%", attackSpecialChance))
+				//fmt.Printf("Current Special: %s\n", color.HiBlueString(modifiedAttack.Type.Special().ActionString()))
 				if 100*rand.Float32() < attackSpecialChance {
-					fmt.Println("Success! Opponent got " + modifiedAttack.Type.Special().String())
+					color.HiGreen("Success! Opponent got " + modifiedAttack.Type.Special().String())
 					//if modifiedAttack.Type.Special() == modifiers.CriticalHit {
 					//	attackDamage = attack.Clamp(attackDamage*float32(modifiers.DefaultConditionAttributes[modifiedAttack.Type.Special()][modifiers.DamageMult]), attack.MinDamage, attack.MaxDamage)
 					//} else {
@@ -200,19 +326,19 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 					   						}
 					*/ //attackDamage = clamp(attackDamage*2, MinDamage, MaxDamage)
 				} else {
-					fmt.Println("Special failed!")
+					color.HiRed("Special failed!")
 				}
 				//fmt.Printf("Damage dealt: %s%.1f%s\n", clrDamage, attackDamage, clrReset)
 				//defender.CurrentHealth -= int(attackDamage)
 				//fmt.Printf("%s%s takes %d damage! (%d/%d)%s\n", clrBadMessage, defender.Name, int(attackDamage), defender.CurrentHealth, defender.MaxHealth, clrReset)
 			} else {
-				fmt.Println("Attack blocked!")
+				color.HiRed("Attack blocked!")
 			}
 		} else {
-			fmt.Println("Missed!")
+			color.HiRed("Missed!")
 		}
 	} else {
-		fmt.Println(f.Name, "failed to execute attack!")
+		color.HiRed(f.Name + " failed to execute attack!")
 	}
 	//}
 
@@ -229,9 +355,9 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 		}
 	}
 	if attackDamage > 0 {
-		fmt.Printf("Damage dealt: %.1f\n", attackDamage)
+		//fmt.Printf("Damage dealt: %s\n", color.HiRedString("%.1f%%", attackDamage))
 		opponent.CurrentHealth -= int(attackDamage)
-		fmt.Printf("%s takes %d damage! (%d/%d)\n", opponent.Name, int(attackDamage), opponent.CurrentHealth, opponent.MaxHealth)
+		fmt.Printf("%s takes %s damage! (%s/%s)\n", color.HiBlueString(opponent.Name), color.HiRedString("%d", int(attackDamage)), color.HiBlueString("%d", opponent.CurrentHealth), color.HiBlueString("%d", opponent.MaxHealth))
 	}
 
 	//Calculate effect from attacker conditions
@@ -361,15 +487,15 @@ func DisplayFighters(f1, f2 *Fighter) {
 	textLeft = append(textLeft, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Intelligence", scaleRange-f1.IntelligenceInstinctBalance, ui.ScalePrint(-f1.IntelligenceInstinctBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f1.IntelligenceInstinctBalance, "Instinct"))
 	textLeft = append(textLeft, "")
 	value = f1.DamageBonus + f1.TempDamageBonus
-	textLeft = append(textLeft, fmt.Sprintf("%20s %7s%% %v", "Damage Bonus", ui.ColorModifiedValue(f1.DamageBonus, value, higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
+	textLeft = append(textLeft, fmt.Sprintf("%20s %s%% %v", "Damage Bonus", ui.ColorModifiedValue(value, f1.TempDamageBonus, "%7.2f", higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
 	value = f1.ComplexityBonus + f1.TempComplexityBonus
-	textLeft = append(textLeft, fmt.Sprintf("%20s %7s%% %v", "Complexity Bonus", ui.ColorModifiedValue(f1.ComplexityBonus, value, higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
+	textLeft = append(textLeft, fmt.Sprintf("%20s %s%% %v", "Complexity Bonus", ui.ColorModifiedValue(value, f1.TempComplexityBonus, "%7.2f", hiredfg, higreenfg), ui.DoubleScalePrint(-value, -100, 0, 100, red, green, hiblack, scaleSize)))
 	value = f1.HitChanceBonus + f1.TempHitChanceBonus
-	textLeft = append(textLeft, fmt.Sprintf("%20s %7s%% %v", "Hit Chance Bonus", ui.ColorModifiedValue(f1.HitChanceBonus, value, higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
+	textLeft = append(textLeft, fmt.Sprintf("%20s %s%% %v", "Hit Chance Bonus", ui.ColorModifiedValue(value, f1.TempHitChanceBonus, "%7.2f", higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
 	value = f1.BlockChanceBonus + f1.TempBlockChanceBonus
-	textLeft = append(textLeft, fmt.Sprintf("%20s %7s%% %v", "Block Chance Bonus", ui.ColorModifiedValue(f1.BlockChanceBonus, value, higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
+	textLeft = append(textLeft, fmt.Sprintf("%20s %s%% %v", "Block Chance Bonus", ui.ColorModifiedValue(value, f1.TempBlockChanceBonus, "%7.2f", higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
 	value = f1.SpecialChanceBonus + f1.TempSpecialChanceBonus
-	textLeft = append(textLeft, fmt.Sprintf("%20s %7s%% %v", "Special Chance Bonus", ui.ColorModifiedValue(f1.SpecialChanceBonus, value, higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
+	textLeft = append(textLeft, fmt.Sprintf("%20s %s%% %v", "Special Chance Bonus", ui.ColorModifiedValue(value, f1.TempSpecialChanceBonus, "%7.2f", higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
 	//textLeft = append(textLeft, fmt.Sprintf("%20s %7.2f%% %v", "Complexity Bonus", f1.ComplexityBonus, ui.DoubleScalePrint(-f1.ComplexityBonus, -100, 0, 100, red, green, hiblack, scaleSize)))
 	//textLeft = append(textLeft, fmt.Sprintf("%20s %7.2f%% %v", "Hit Chance Bonus", f1.HitChanceBonus, ui.DoubleScalePrint(f1.HitChanceBonus, -100, 0, 100, red, green, hiblack, scaleSize)))
 	//textLeft = append(textLeft, fmt.Sprintf("%20s %7.2f%% %v", "Block Chance Bonus", f1.BlockChanceBonus, ui.DoubleScalePrint(f1.BlockChanceBonus, -100, 0, 100, red, green, hiblack, scaleSize)))
@@ -396,15 +522,15 @@ func DisplayFighters(f1, f2 *Fighter) {
 	textRight = append(textRight, fmt.Sprintf("%12s %5.2f %v %5.2f %-12s", "Intelligence", scaleRange-f2.IntelligenceInstinctBalance, ui.ScalePrint(-f2.IntelligenceInstinctBalance, -scaleRange, scaleRange, higreen, hiblue, scaleSize), scaleRange+f2.IntelligenceInstinctBalance, "Instinct"))
 	textRight = append(textRight, "")
 	value = f2.DamageBonus + f2.TempDamageBonus
-	textRight = append(textRight, fmt.Sprintf("%20s %7s%% %v", "Damage Bonus", ui.ColorModifiedValue(f2.DamageBonus, value, higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
+	textRight = append(textRight, fmt.Sprintf("%20s %s%% %v", "Damage Bonus", ui.ColorModifiedValue(value, f2.TempDamageBonus, "%7.2f", higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
 	value = f2.ComplexityBonus + f2.TempComplexityBonus
-	textRight = append(textRight, fmt.Sprintf("%20s %7s%% %v", "Complexity Bonus", ui.ColorModifiedValue(f2.ComplexityBonus, value, higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
+	textRight = append(textRight, fmt.Sprintf("%20s %s%% %v", "Complexity Bonus", ui.ColorModifiedValue(value, f2.TempComplexityBonus, "%7.2f", hiredfg, higreenfg), ui.DoubleScalePrint(-value, -100, 0, 100, red, green, hiblack, scaleSize)))
 	value = f2.HitChanceBonus + f2.TempHitChanceBonus
-	textRight = append(textRight, fmt.Sprintf("%20s %7s%% %v", "Hit Chance Bonus", ui.ColorModifiedValue(f2.HitChanceBonus, value, higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
+	textRight = append(textRight, fmt.Sprintf("%20s %s%% %v", "Hit Chance Bonus", ui.ColorModifiedValue(value, f2.TempHitChanceBonus, "%7.2f", higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
 	value = f2.BlockChanceBonus + f2.TempBlockChanceBonus
-	textRight = append(textRight, fmt.Sprintf("%20s %7s%% %v", "Block Chance Bonus", ui.ColorModifiedValue(f2.BlockChanceBonus, value, higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
+	textRight = append(textRight, fmt.Sprintf("%20s %s%% %v", "Block Chance Bonus", ui.ColorModifiedValue(value, f2.TempBlockChanceBonus, "%7.2f", higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
 	value = f2.SpecialChanceBonus + f2.TempSpecialChanceBonus
-	textRight = append(textRight, fmt.Sprintf("%20s %7s%% %v", "Special Chance Bonus", ui.ColorModifiedValue(f2.SpecialChanceBonus, value, higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
+	textRight = append(textRight, fmt.Sprintf("%20s %s%% %v", "Special Chance Bonus", ui.ColorModifiedValue(value, f2.TempSpecialChanceBonus, "%7.2f", higreenfg, hiredfg), ui.DoubleScalePrint(value, -100, 0, 100, red, green, hiblack, scaleSize)))
 
 	// textRight = append(textRight, fmt.Sprintf("%20s %7.2f%% %v", "Damage Bonus", f2.DamageBonus, ui.DoubleScalePrint(f2.DamageBonus, -100, 0, 100, red, green, hiblack, scaleSize)))
 	// textRight = append(textRight, fmt.Sprintf("%20s %7.2f%% %v", "Complexity Bonus", f2.ComplexityBonus, ui.DoubleScalePrint(-f2.ComplexityBonus, -100, 0, 100, red, green, hiblack, scaleSize)))
@@ -613,21 +739,21 @@ func CreateFighter() *Fighter {
 
 	fmt.Println(answers)
 
-	attackType := attack.AttackType(0)
-	attackTypePromptOptions := []string{}
+	/* 	attackType := attack.AttackType(0)
+	   	attackTypePromptOptions := []string{}
 
-	for attackType.String() != "" {
-		attackTypePromptOptions = append(attackTypePromptOptions, attackType.String())
-		//+": "+attackType.Hint())
-		attackType++
-	}
+	   	for attackType.String() != "" {
+	   		attackTypePromptOptions = append(attackTypePromptOptions, attackType.String())
+	   		//+": "+attackType.Hint())
+	   		attackType++
+	   	}
 
-	attackTypePrompt := &survey.Select{
-		Message:  "Select an attack type:",
-		Options:  attackTypePromptOptions,
-		PageSize: attack.MaxAttackTypes,
-		Help:     "Punch: Closed fist attacks, high damage, low complexity, high hit chance, high block chance\nSlap: Open fist or back hand attacks, very low damage, low complexity, high hit chance, high block chance\nKick: Leg attacks, high damage, average complexity, high hit chance, high block chance\nKnee strike: Attacks with a knee, very high damage, average complexity, high hit chance, average block chance\nElbow strike: Attacks with an elbow, very high damage, low complexity, high hit chance, high block chance\nThrow: Attacks to knockdown opponent, average damage, average complexity, average hit chance, average block chance, can knockdown opponent\nLock: Grapple attacks to block joint movement, very low damage, high complexity, low hit chance, low block chance, decrease opponent's hit and block chances\nChoke: Grapple attacks to block airways, low damage, high complexity, low hit chance, low block chance, decrease opponent's damage and increase complexity\nCustom: Custom free text attack",
-	}
+	   	attackTypePrompt := &survey.Select{
+	   		Message:  "Select an attack type:",
+	   		Options:  attackTypePromptOptions,
+	   		PageSize: attack.MaxAttackTypes,
+	   		Help:     "Punch: Closed fist attacks, high damage, low complexity, high hit chance, high block chance\nSlap: Open fist or back hand attacks, very low damage, low complexity, high hit chance, high block chance\nKick: Leg attacks, high damage, average complexity, high hit chance, high block chance\nKnee strike: Attacks with a knee, very high damage, average complexity, high hit chance, average block chance\nElbow strike: Attacks with an elbow, very high damage, low complexity, high hit chance, high block chance\nThrow: Attacks to knockdown opponent, average damage, average complexity, average hit chance, average block chance, can knockdown opponent\nLock: Grapple attacks to block joint movement, very low damage, high complexity, low hit chance, low block chance, decrease opponent's hit and block chances\nChoke: Grapple attacks to block airways, low damage, high complexity, low hit chance, low block chance, decrease opponent's damage and increase complexity\nCustom: Custom free text attack",
+	   	} */
 
 	// Create the fighter object
 	fighter := &Fighter{
@@ -652,102 +778,105 @@ func CreateFighter() *Fighter {
 	fighter.CriticalChanceBonus = (fighter.SpeedControlBalance - fighter.IntelligenceInstinctBalance) * 10
 	fighter.SpecialChanceBonus = (fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance) * 10
 
-	defaultAttacks := attack.NewDefaultAttacks()
-	attacks := []*attack.Attack{}
+	/* 	defaultAttacks := attack.NewDefaultAttacks()
+	   	attacks := []*attack.Attack{}
+	   	for _, a := range defaultAttacks.ByName {
+	   		attacks = append(attacks, a)
+	   	}
 
-	i := 0
-	for i < numAttacks {
-		fmt.Printf("Attack %d from %d\n", i+1, numAttacks)
-		attackTypeSelected := 0
-		// Ask for attack type
-		err := survey.AskOne(attackTypePrompt, &attackTypeSelected, survey.WithValidator(survey.Required))
-		if err != nil {
-			fmt.Println("Error during the attack type selection:", err)
-			break
-		}
-		attackType = attack.AttackType(attackTypeSelected)
-		fmt.Println("defaultAttacks.GetAttacksByType(attackType)=", defaultAttacks.GetAttacksByType(attackType))
+	   	i := 0
+	   	for i < numAttacks {
+	   		fmt.Printf("Attack %d from %d\n", i+1, numAttacks)
+	   		attackTypeSelected := 0
+	   		// Ask for attack type
+	   		err := survey.AskOne(attackTypePrompt, &attackTypeSelected, survey.WithValidator(survey.Required))
+	   		if err != nil {
+	   			fmt.Println("Error during the attack type selection:", err)
+	   			break
+	   		}
+	   		attackType = attack.AttackType(attackTypeSelected)
+	   		fmt.Println("defaultAttacks.GetAttacksByType(attackType)=", defaultAttacks.GetAttacksByType(attackType))
 
-		// If non-custom type, ask for specific attack
-		if attackType != attack.Custom {
-			attackNamePromptOptions := []string{}
-			for _, value := range defaultAttacks.GetAttacksByType(attackType) {
-				//				damage:=clamp(value.Damage+fighter.DamageBonus,)
-				//attackDescription := fmt.Sprintf("%s [DMG: %5.2f, CMP: %5.2f, HIT: %5.2f, BLK: %5.2f, SPC: %5.2f]", value.Name, value.Damage+fighter.DamageBonus, value.Complexity+fighter.ComplexityBonus, value.HitChance+fighter.HitChanceBonus, value.BlockChance+fighter.BlockChanceBonus, value.SpecialChance+fighter.SpecialChanceBonus)
-				attackNamePromptOptions = append(attackNamePromptOptions, value.Name)
-			}
-			attackNamePromptOptions = append(attackNamePromptOptions, "<-Back")
+	   		// If non-custom type, ask for specific attack
+	   		if attackType != attack.Custom {
+	   			attackNamePromptOptions := []string{}
+	   			for _, value := range defaultAttacks.GetAttacksByType(attackType) {
+	   				//				damage:=clamp(value.Damage+fighter.DamageBonus,)
+	   				//attackDescription := fmt.Sprintf("%s [DMG: %5.2f, CMP: %5.2f, HIT: %5.2f, BLK: %5.2f, SPC: %5.2f]", value.Name, value.Damage+fighter.DamageBonus, value.Complexity+fighter.ComplexityBonus, value.HitChance+fighter.HitChanceBonus, value.BlockChance+fighter.BlockChanceBonus, value.SpecialChance+fighter.SpecialChanceBonus)
+	   				attackNamePromptOptions = append(attackNamePromptOptions, value.Name)
+	   			}
+	   			attackNamePromptOptions = append(attackNamePromptOptions, "<-Back")
 
-			attackNamePrompt := &survey.Select{
-				Message:  "Select an attack:",
-				Options:  attackNamePromptOptions,
-				PageSize: len(attackNamePromptOptions),
-				Description: func(value string, index int) string {
-					if value != "<-Back" {
-						attack := defaultAttacks.GetAttackByName(value)
-						return fmt.Sprintf("[DMG: %5.2f, CMP: %5.2f, HIT: %5.2f, BLK: %5.2f, SPC: %5.2f]", attack.Damage+fighter.DamageBonus, attack.Complexity+fighter.ComplexityBonus, attack.HitChance+fighter.HitChanceBonus, attack.BlockChance+fighter.BlockChanceBonus, attack.SpecialChance+fighter.SpecialChanceBonus)
-					}
-					return ""
-				},
-			}
-			attackName := ""
-			err = survey.AskOne(attackNamePrompt, &attackName, survey.WithValidator(survey.Required))
-			if err != nil {
-				fmt.Println("Error during the attack selection:", err)
-				break
-			}
-			if attackName != "<-Back" {
-				// Add attack to attacks array
-				attacks = append(attacks, defaultAttacks.GetAttackByName(attackName))
-				fmt.Printf("attacks= %v\n", attacks)
-				i++
-			}
-			continue
-		}
+	   			attackNamePrompt := &survey.Select{
+	   				Message:  "Select an attack:",
+	   				Options:  attackNamePromptOptions,
+	   				PageSize: len(attackNamePromptOptions),
+	   				Description: func(value string, index int) string {
+	   					if value != "<-Back" {
+	   						attack := defaultAttacks.GetAttackByName(value)
+	   						return fmt.Sprintf("[DMG: %5.2f, CMP: %5.2f, HIT: %5.2f, BLK: %5.2f, SPC: %5.2f]", attack.Damage+fighter.DamageBonus, attack.Complexity+fighter.ComplexityBonus, attack.HitChance+fighter.HitChanceBonus, attack.BlockChance+fighter.BlockChanceBonus, attack.SpecialChance+fighter.SpecialChanceBonus)
+	   					}
+	   					return ""
+	   				},
+	   			}
+	   			attackName := ""
+	   			err = survey.AskOne(attackNamePrompt, &attackName, survey.WithValidator(survey.Required))
+	   			if err != nil {
+	   				fmt.Println("Error during the attack selection:", err)
+	   				break
+	   			}
+	   			if attackName != "<-Back" {
+	   				// Add attack to attacks array
+	   				attacks = append(attacks, defaultAttacks.GetAttackByName(attackName))
+	   				fmt.Printf("attacks= %v\n", attacks)
+	   				i++
+	   			}
+	   			continue
+	   		}
 
-		// Ask for the description of the custom attack
-		customAttackName := ""
-		customAttackPrompt := &survey.Input{
-			Message: "Enter the description for the custom attack:",
-		}
-		err = survey.AskOne(customAttackPrompt, &customAttackName)
-		fmt.Println("customAttackName=" + customAttackName)
-		if err != nil {
-			fmt.Println("Error during the custom attack creation:", err)
-			break
-		}
+	   		// Ask for the description of the custom attack
+	   		customAttackName := ""
+	   		customAttackPrompt := &survey.Input{
+	   			Message: "Enter the description for the custom attack:",
+	   		}
+	   		err = survey.AskOne(customAttackPrompt, &customAttackName)
+	   		fmt.Println("customAttackName=" + customAttackName)
+	   		if err != nil {
+	   			fmt.Println("Error during the custom attack creation:", err)
+	   			break
+	   		}
 
-		// Validate the attack name and get the attack parameters using OpenAI API
-		validAttack, err := validateAttackName(customAttackName)
-		if err != nil {
-			fmt.Printf("Error validating attack name: %s\n", err)
-			continue
-		}
+	   		// Validate the attack name and get the attack parameters using OpenAI API
+	   		validAttack, err := validateAttackName(customAttackName)
+	   		if err != nil {
+	   			fmt.Printf("Error validating attack name: %s\n", err)
+	   			continue
+	   		}
 
-		if validAttack {
-			fmt.Println("Valid attack")
-			customAttackType, err := getOpenAIResponse("COG_TYPE_ATTACK_PROMPT", customAttackName)
-			if err != nil {
-				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
-				continue
-			}
-			fmt.Println("customAttackType=", customAttackType.(string))
+	   		if validAttack {
+	   			fmt.Println("Valid attack")
+	   			customAttackType, err := getOpenAIResponse("COG_TYPE_ATTACK_PROMPT", customAttackName)
+	   			if err != nil {
+	   				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
+	   				continue
+	   			}
+	   			fmt.Println("customAttackType=", customAttackType.(string))
 
-			complexityValue, err := getOpenAIResponse("COG_COMPLEXITY_ATTACK_PROMPT", customAttackName)
-			if err != nil {
-				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
-				continue
-			}
-			fmt.Println("complexityValue=", complexityValue.(int))
-		}
-	}
-	fmt.Printf("attacks_outside= %v\n", attacks)
+	   			complexityValue, err := getOpenAIResponse("COG_COMPLEXITY_ATTACK_PROMPT", customAttackName)
+	   			if err != nil {
+	   				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
+	   				continue
+	   			}
+	   			fmt.Println("complexityValue=", complexityValue.(int))
+	   		}
+	   	}
+	   	fmt.Printf("attacks_outside= %v\n", attacks)
 
-	// Create the fighter attacks
-	fighter.Attacks = append(fighter.Attacks, attacks...)
-	fmt.Printf("fighter.Attacks= %v\n", fighter.Attacks)
+	   	// Create the fighter attacks
+	   	fighter.Attacks = append(fighter.Attacks, attacks...)
+	   	fmt.Printf("fighter.Attacks= %v\n", fighter.Attacks)
 
-	fmt.Printf("\n%s has been created!\n", fighter.Name)
+	*/fmt.Printf("\n%s has been created!\n", fighter.Name)
 	fighter.DisplayFighter()
 
 	return fighter
@@ -801,7 +930,7 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 	computerFighter.CriticalChanceBonus = (computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance) * 10
 	computerFighter.SpecialChanceBonus = (computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance) * 10
 
-	defaultAttacks := attack.NewDefaultAttacks()
+	/* defaultAttacks := attack.NewDefaultAttacks()
 	for range playerFighter.Attacks {
 		attacksList := defaultAttacks.GetAttacksByType(attack.AttackType(rand.Intn(attack.MaxAttackTypes - 1)))
 		fmt.Println("attacksList=", attacksList)
@@ -809,7 +938,7 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 		computerAttack := attacksList[rand.Intn(len(attacksList))]
 		fmt.Println("computerAttack=", computerAttack)
 		computerFighter.Attacks = append(computerFighter.Attacks, computerAttack)
-	}
+	} */
 
 	fmt.Printf("\n%s has been generated!\n", computerFighter.Name)
 	computerFighter.DisplayFighter()

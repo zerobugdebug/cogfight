@@ -5,8 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/fatih/color"
+	//"github.com/AlecAivazis/survey/v2"
 
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/fighter"
@@ -64,31 +63,11 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 			var selectedAttack *attack.Attack
 			fmt.Printf("\n%sTurn %d: %s attacks %s!%s\n\n", clrGoodMessage, currentTurn, attacker.Name, defender.Name, clrReset)
 			if currentTurn%2 != 0 {
-				attackNamePromptOptions := []string{}
-				for _, value := range attacker.Attacks {
-					attackNamePromptOptions = append(attackNamePromptOptions, value.Name)
-				}
-				attackNamePrompt := &survey.Select{
-					Message:  "Select an attack:",
-					Options:  attackNamePromptOptions,
-					PageSize: len(attackNamePromptOptions),
-					Description: func(value string, index int) string {
-						attack := attacker.Attacks[index]
-						return fmt.Sprintf("[DMG: %5.2f, CMP: %5.2f, HIT: %5.2f, BLK: %5.2f, SPC: %5.2f]", attack.Damage+attacker.DamageBonus, attack.Complexity+attacker.ComplexityBonus, attack.HitChance+attacker.HitChanceBonus, attack.BlockChance+attacker.BlockChanceBonus, attack.SpecialChance+attacker.SpecialChanceBonus)
-					},
-				}
-				attackNumber := 0
-				err := survey.AskOne(attackNamePrompt, &attackNumber, survey.WithValidator(survey.Required))
-				if err != nil {
-					fmt.Println("Error during the attack selection:", err)
-					break
-				}
-
-				selectedAttack = attacker.Attacks[attackNumber]
+				selectedAttack = attacker.SelectAttack(defender)
 			} else {
-				selectedAttack = attacker.Attacks[rand.Intn(3)]
+				selectedAttack = attack.NewDefaultAttacks().GetRandomAttack()
 			}
-			fmt.Printf("Selected attack: %s\n", color.CyanString(selectedAttack.Name))
+			//fmt.Printf("Selected attack: %s\n", color.CyanString(selectedAttack.Name))
 			attacker.ApplyAttack(defender, selectedAttack)
 		}
 

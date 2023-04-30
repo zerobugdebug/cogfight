@@ -1,6 +1,8 @@
 package attack
 
 import (
+	"math/rand"
+
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
 )
 
@@ -214,6 +216,12 @@ func (attacks *Attacks) GetAttackByName(name string) *Attack {
 
 func (attacks *Attacks) GetAttacksByType(attackType AttackType) []*Attack {
 	return attacks.ByType[attackType]
+}
+
+func (attacks *Attacks) GetRandomAttack() *Attack {
+	attackType := AttackType(rand.Intn(MaxAttackTypes - 1))
+	attacksNum := len(attacks.GetAttacksByType(attackType))
+	return attacks.GetAttacksByType(attackType)[rand.Intn(attacksNum)]
 }
 
 func Clamp(val, min, max float32) float32 {
