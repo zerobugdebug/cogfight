@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
 )
 
 type Alignment int
@@ -80,8 +81,8 @@ func BoxPrint(minWidth int, colorFunc func(a ...interface{}) string, lines []str
 		pureLine := ansiRegex.ReplaceAllString(line, "")
 		if utf8.RuneCountInString(pureLine) > maxWidth {
 			maxWidth = len(pureLine)
-			fmt.Println("line=", pureLine)
-			fmt.Println("maxWidth=", maxWidth)
+			//fmt.Println("line=", pureLine)
+			//fmt.Println("maxWidth=", maxWidth)
 		}
 	}
 

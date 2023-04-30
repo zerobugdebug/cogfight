@@ -7,10 +7,10 @@ import (
 
 	//"github.com/AlecAivazis/survey/v2"
 
+	"github.com/fatih/color"
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/fighter"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
-
 )
 
 // Color constants
@@ -67,8 +67,9 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 				selectedAttack = attacker.SelectAttack(defender)
 			} else {
 				selectedAttack = attack.NewDefaultAttacks().GetRandomAttack()
+				fmt.Printf("Selected attack: %s\n", color.CyanString(selectedAttack.Name))
 			}
-			//fmt.Printf("Selected attack: %s\n", color.CyanString(selectedAttack.Name))
+
 			attacker.ApplyAttack(defender, selectedAttack)
 		}
 
