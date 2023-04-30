@@ -290,21 +290,21 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 	// } else {
 	// Determine the skill of the attacked
 	attackComplexity := attack.Clamp(modifiedAttack.Complexity, attack.MinComplexity, attack.MaxComplexity)
-	fmt.Printf("Current Complexity: %s =>  ", color.HiMagentaString("%.1f%%", attackComplexity))
+	fmt.Printf("Complexity: %s =>  ", color.HiMagentaString("%.1f%%", attackComplexity))
 	if 100*rand.Float32() > attackComplexity {
 		color.HiGreen("Attack performed flawlessly!")
 		// Determine the attack hit chance
 		attackHitChance := attack.Clamp(modifiedAttack.HitChance, attack.MinHitChance, attack.MaxHitChance)
-		fmt.Printf("Current Hit Chance: %s => ", color.HiMagentaString("%.1f%%", attackHitChance))
+		fmt.Printf("Hit Chance: %s => ", color.HiMagentaString("%.1f%%", attackHitChance))
 		if 100*rand.Float32() < attackHitChance || sureStrike == 1 {
 			color.HiGreen("Successfull hit!")
 			attackBlockChance := attack.Clamp(modifiedAttack.BlockChance, attack.MinBlockChance, attack.MaxBlockChance)
-			fmt.Printf("Current Block Chance: %s => ", color.HiMagentaString("%.1f%%", attackBlockChance))
+			fmt.Printf("Block Chance: %s => ", color.HiMagentaString("%.1f%%", attackBlockChance))
 			if 100*rand.Float32() > attackBlockChance || sureStrike == 1 {
 				color.HiGreen("Attack not blocked!")
 				attackDamage = attack.Clamp(modifiedAttack.Damage, attack.MinDamage, attack.MaxDamage)
 				attackSpecialChance := attack.Clamp(modifiedAttack.SpecialChance, attack.MinSpecialChance, attack.MaxSpecialChance)
-				fmt.Printf("Current Special: %s, %s => ", color.HiBlueString(modifiedAttack.Type.Special().ActionString()), color.HiMagentaString("%.1f%%", attackSpecialChance))
+				fmt.Printf("Special: %s, %s => ", color.HiBlueString(modifiedAttack.Type.Special().ActionString()), color.HiMagentaString("%.1f%%", attackSpecialChance))
 				//fmt.Printf("Current Special: %s\n", color.HiBlueString(modifiedAttack.Type.Special().ActionString()))
 				if 100*rand.Float32() < attackSpecialChance {
 					color.HiGreen("Success! Opponent got " + modifiedAttack.Type.Special().String())
@@ -877,7 +877,8 @@ func CreateFighter() *Fighter {
 	   	fighter.Attacks = append(fighter.Attacks, attacks...)
 	   	fmt.Printf("fighter.Attacks= %v\n", fighter.Attacks)
 
-	*/fmt.Printf("\n%s has been created!\n", fighter.Name)
+	*/
+	fmt.Printf("\n%s has been created!\n", fighter.Name)
 	//fighter.DisplayFighter()
 
 	return fighter
@@ -991,7 +992,8 @@ func validateAttackName(attackName string) (bool, error) {
 	   	// Parse the response to confirm if attack is valid
 	   	//reply := response.Choices[0].Message.Content
 	   	client = nil
-	*/fmt.Println("attackValidation=", attackValidation)
+	*/
+	//fmt.Println("attackValidation=", attackValidation)
 	reply := attackValidation.(string)
 
 	if strings.Contains(reply, "Invalid") {
@@ -1041,21 +1043,21 @@ func getOpenAIResponse(promptEnvVariable string, promptData string) (interface{}
 		return 0, fmt.Errorf("Error sending OpenAI API request: %s", err)
 	}
 
-	fmt.Println("response.Choices[0].Message.Content=", response.Choices[0].Message.Content)
+	//fmt.Println("response.Choices[0].Message.Content=", response.Choices[0].Message.Content)
 	// Parse the response and extract integer answer
 	reply := response.Choices[0].Message.Content
 	re := regexp.MustCompile(`\[\[(\d+)\]\]`)
 	matchInt := re.FindStringSubmatch(reply)
-	fmt.Println("matchInt=", matchInt)
+	//fmt.Println("matchInt=", matchInt)
 	if len(matchInt) > 1 {
-		fmt.Println("Number:", matchInt[1])
+		//fmt.Println("Number:", matchInt[1])
 		return strconv.Atoi(matchInt[1])
 	}
 	re = regexp.MustCompile(`\[\[(\w+)\]\]`)
 	matchString := re.FindStringSubmatch(reply)
-	fmt.Println("matchString=", matchString)
+	//fmt.Println("matchString=", matchString)
 	if len(matchString) > 1 {
-		fmt.Println("String:", matchString[1])
+		//fmt.Println("String:", matchString[1])
 		return matchString[1], nil
 	}
 
