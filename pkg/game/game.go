@@ -10,6 +10,7 @@ import (
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/fighter"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
+
 )
 
 // Color constants
@@ -99,7 +100,7 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 
 	// Determine the winner and return the fighter object
 	var winner *fighter.Fighter
-	if playerFighter.CurrentHealth > 0 {
+	if computerFighter.CurrentHealth < 0 {
 		winner = playerFighter
 	} else {
 		winner = computerFighter

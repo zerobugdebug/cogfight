@@ -89,7 +89,7 @@ func (f *Fighter) SelectAttack(opponent *Fighter) *attack.Attack {
 			break
 		}
 		attackType = attack.AttackType(attackTypeSelected)
-		fmt.Println("defaultAttacks.GetAttacksByType(attackType)=", defaultAttacks.GetAttacksByType(attackType))
+		//fmt.Println("defaultAttacks.GetAttacksByType(attackType)=", defaultAttacks.GetAttacksByType(attackType))
 
 		// If non-custom type, ask for specific attack
 		if attackType != attack.Custom {
@@ -382,6 +382,7 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 
 }
 
+/*
 func (f *Fighter) DisplayFighter() {
 	topBorder := "╔══════════════════════════════════════════════════════════╗"
 	bottomBorder := "╚══════════════════════════════════════════════════════════╝"
@@ -414,7 +415,7 @@ func (f *Fighter) DisplayFighter() {
 	fmt.Printf("║ Max Health: %-44d ║\n", f.MaxHealth)
 	fmt.Println(spacer)
 	fmt.Println(bottomBorder)
-}
+} */
 
 func DisplayFighters(f1, f2 *Fighter) {
 	//boxWidth := 50
@@ -737,7 +738,7 @@ func CreateFighter() *Fighter {
 		return nil
 	}
 
-	fmt.Println(answers)
+	//fmt.Println(answers)
 
 	/* 	attackType := attack.AttackType(0)
 	   	attackTypePromptOptions := []string{}
@@ -877,7 +878,7 @@ func CreateFighter() *Fighter {
 	   	fmt.Printf("fighter.Attacks= %v\n", fighter.Attacks)
 
 	*/fmt.Printf("\n%s has been created!\n", fighter.Name)
-	fighter.DisplayFighter()
+	//fighter.DisplayFighter()
 
 	return fighter
 }
@@ -941,7 +942,7 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 	} */
 
 	fmt.Printf("\n%s has been generated!\n", computerFighter.Name)
-	computerFighter.DisplayFighter()
+	//computerFighter.DisplayFighter()
 	return computerFighter
 }
 
