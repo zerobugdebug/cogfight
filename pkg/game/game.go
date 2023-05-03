@@ -3,14 +3,16 @@ package game
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 
 	//"github.com/AlecAivazis/survey/v2"
-
 	"github.com/fatih/color"
+
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/fighter"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
+	"github.com/zerobugdebug/cogfight/pkg/ui"
 )
 
 // Color constants
@@ -32,6 +34,22 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 	var defender *fighter.Fighter
 
 	fmt.Printf("\n%s vs %s!\n", playerFighter.Name, computerFighter.Name)
+	fighter.DisplayFighters(playerFighter, computerFighter)
+	fmt.Println("Waiting for the comments...")
+	stopChan := make(chan bool)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go ui.RotatingPipe(stopChan, &wg)
+	situation := "Fight begins. Introduce yourselves and talk about fighters"
+	comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", playerFighter.String(), computerFighter.String(), situation, "full")
+	if err != nil {
+		fmt.Println("Can't get OpenAI response")
+		return nil
+	}
+	stopChan <- true
+	wg.Wait()
+	fmt.Println("\r" + comments.(string))
+	fmt.Scanln()
 
 	// Fight until one of the fighters' health is reduced to zero
 	for playerFighter.CurrentHealth > 0 && computerFighter.CurrentHealth > 0 {
@@ -94,7 +112,8 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 			}
 
 		}
-
+		situation := "Fight begins. Introduce yourselves and talk about fighters"
+		fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", attacker.String(), defender.String(), situation, "full")
 		currentTurn++
 		fmt.Scanln()
 	}

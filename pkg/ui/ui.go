@@ -5,8 +5,9 @@ import (
 	"math"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 	"unicode/utf8"
-
 )
 
 type Alignment int
@@ -111,6 +112,24 @@ func ColorModifiedValue(value, delta float32, format string, colorMore func(a ..
 		} else {
 
 			return fmt.Sprintf(format, value)
+		}
+	}
+}
+
+func RotatingPipe(stopChan chan bool, wg *sync.WaitGroup) {
+	defer wg.Done()
+	pipeChars := []string{"|", "/", "-", "\\"}
+	i := 0
+
+	for {
+		select {
+		case <-stopChan:
+			//fmt.Println("\nRotating pipe stopped.")
+			return
+		default:
+			fmt.Printf("\r%s", pipeChars[i])
+			i = (i + 1) % len(pipeChars)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }

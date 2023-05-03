@@ -1,20 +1,18 @@
 package fighter
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
-	"github.com/sashabaranov/go-openai"
+	"github.com/valyala/fasthttp"
 
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
@@ -24,6 +22,60 @@ import (
 const (
 	numAttacks int = 3
 )
+
+var fighterNames = []string{
+	"Bonor McGragor",
+	"Habib Nagomedov",
+	"Ron Bones",
+	"Manda Nuñez",
+	"Ismael Adesanua",
+	"Sanderson Alva",
+	"George Saint-Pierre",
+	"Fransis Nganu",
+	"Demetrius Jonson",
+	"Roze Namajunaz",
+	"Brice Lee",
+	"Jacky Chan",
+	"Jat Li",
+	"Dannie Yen",
+	"Toni Jaa",
+	"Stephen Segal",
+	"Chack Norris",
+	"Cyntia Rothrock",
+	"Michell Yeoh",
+	"Iko Uwaes",
+	"Roys Gracie",
+	"Damian Maia",
+	"Rikson Gracie",
+	"Marcelo Garciia",
+	"Renco Gracie",
+	"Garry Tonan",
+	"Mas Ayoma",
+	"Benny Urquidez",
+	"Joe Luis",
+	"Raimond Daniils",
+	"Miriam Nakamato",
+	"Samart Payakaruun",
+	"Buakow Banchamek",
+	"Cong Le",
+	"Liu Hailong",
+	"Xu Xiaodong",
+	"Wei Lai",
+	"Saenchaai",
+	"Yodsaanklai Fairtex",
+	"Ernesto Host",
+	"Remy Bonjaski",
+	"Giorgio Petrosyaan",
+	"Badr Hary",
+	"Niky Holzken",
+	"Andy Hagg",
+	"Masutasu Oyama",
+	"Kancho Hatsuo Royyama",
+	"Kenji Mitori",
+	"Gogen Yamagucchi",
+	"Chojuan Miyagi",
+	"Tatsuo Shimabuu",
+}
 
 // Fighter represents a fighter in the game
 type Fighter struct {
@@ -47,10 +99,42 @@ type Fighter struct {
 	TempHitChanceBonus          float32
 	TempBlockChanceBonus        float32
 	TempSpecialChanceBonus      float32
-	Attacks                     []*attack.Attack
+	CustomAttacks               []*attack.Attack
 	Conditions                  map[modifiers.Condition]int
 	CurrentHealth               int
 	MaxHealth                   int
+}
+
+type proxyRequestData struct {
+	PromptTemplate string `json:"prompt_template"`
+	PromptData1    string `json:"prompt_data1"`
+	PromptData2    string `json:"prompt_data2,omitempty"`
+	PromptData3    string `json:"prompt_data3,omitempty"`
+	ResponseType   string `json:"response_type"`
+}
+
+type proxyResponseData struct {
+	Int    int    `json:"int,omitempty"`
+	String string `json:"string,omitempty"`
+	Full   string `json:"full,omitempty"`
+}
+
+func (f *Fighter) String() string {
+	text := ""
+	var scaleRange float32 = 8
+
+	text = fmt.Sprintf("Name: %s, Height: %d cm, Weight %d kg, Age %d years\n", f.Name, f.Height, f.Weight, f.Age)
+	text += fmt.Sprintf("Agility: %.f, Strength: %.f, ", scaleRange-f.AgilityStrengthBalance, scaleRange+f.AgilityStrengthBalance)
+	text += fmt.Sprintf("Burst: %.f, Endurance: %.f, ", scaleRange-f.BurstEnduranceBalance, scaleRange+f.BurstEnduranceBalance)
+	text += fmt.Sprintf("Defense: %.f, Offense: %.f, ", scaleRange-f.DefenseOffenseBalance, scaleRange+f.DefenseOffenseBalance)
+	text += fmt.Sprintf("Speed: %.f, Control: %.f, ", scaleRange-f.SpeedControlBalance, scaleRange+f.SpeedControlBalance)
+	text += fmt.Sprintf("Intelligence: %.f, Instinct: %.f\n", scaleRange-f.IntelligenceInstinctBalance, scaleRange+f.IntelligenceInstinctBalance)
+	conditionsText := []string{}
+	for condition := range f.Conditions {
+		conditionsText = append(conditionsText, fmt.Sprintf("%s", condition.String()))
+	}
+	text += fmt.Sprintf("Conditions: %s", strings.Join(conditionsText, ", "))
+	return text
 }
 
 func (f *Fighter) SelectAttack(opponent *Fighter) *attack.Attack {
@@ -549,41 +633,6 @@ func DisplayFighters(f1, f2 *Fighter) {
 		fmt.Println(v + spaceBetweenFighters + boxRight[i])
 	}
 
-	//	fmt.Println(leftTopBorder + spaceBetweenFighters + rightTopBorder)
-	//	fmt.Println(leftSpacer + spaceBetweenFighters + rightSpacer)
-	/*	textLeft = " Name: " + f1.Name + strings.Repeat(" ", boxWidth-len(f1.Name)-2-len(" Name: "))
-		textRight = " Name: " + f2.Name + strings.Repeat(" ", boxWidth-len(f2.Name)-2-len(" Name: "))
-		fmt.Println(leftEdge + textLeft + leftEdge + spaceBetweenFighters + rightEdge + textRight + rightEdge)
-		textLeft = " Height: " + strconv.Itoa(f1.Height) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f1.Height))-2-len(" Height: "))
-		textRight = " Height: " + strconv.Itoa(f2.Height) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f2.Height))-2-len(" Height: "))
-		fmt.Println(leftEdge + textLeft + leftEdge + spaceBetweenFighters + rightEdge + textRight + rightEdge)
-		textLeft = " Weight: " + strconv.Itoa(f1.Weight) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f1.Weight))-2-len(" Weight: "))
-		textRight = " Weight: " + strconv.Itoa(f2.Weight) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f2.Weight))-2-len(" Weight: "))
-		fmt.Println(leftEdge + textLeft + leftEdge + spaceBetweenFighters + rightEdge + textRight + rightEdge)
-		textLeft = " Age: " + strconv.Itoa(f1.Age) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f1.Age))-2-len(" Age: "))
-		textRight = " Age: " + strconv.Itoa(f2.Age) + strings.Repeat(" ", boxWidth-len(strconv.Itoa(f2.Age))-2-len(" Age: "))
-		fmt.Println(leftEdge + textLeft + leftEdge + spaceBetweenFighters + rightEdge + textRight + rightEdge)
-		textLeft = "Agility " + strconv.FormatFloat(float64(12-f1.AgilityStrengthBalance), 'f', 1, 32) + ui.ScalePrint(f1.AgilityStrengthBalance, -10, 10, color.New(color.BgBlue).SprintFunc(), color.New(color.BgRed).SprintFunc(), 20) + " " + strconv.FormatFloat(float64(8+f1.AgilityStrengthBalance), 'f', 1, 32) + " Strength"
-		textRight = ui.ScalePrint(f2.AgilityStrengthBalance, -10, 10, color.New(color.BgBlue).SprintFunc(), color.New(color.BgRed).SprintFunc(), 20)
-		fmt.Println(leftEdge + textLeft + leftEdge + spaceBetweenFighters + rightEdge + textRight + rightEdge)*/
-	/*	fmt.Println(headerFormat, "Attacks", "Attacks")
-
-		maxAttacks := max(len(f1.Attacks), len(f2.Attacks))
-		for i := 0; i < maxAttacks; i++ {
-			attack1 := " "
-			attack2 := " "
-			if i < len(f1.Attacks) {
-				attack1 = f1.Attacks[i].Name
-			}
-			if i < len(f2.Attacks) {
-				attack2 = f2.Attacks[i].Name
-			}
-			fmt.Printf(leftFormat+rightFormat+"\n", strconv.Itoa(i+1)+". "+attack1, "", strconv.Itoa(i+1)+". "+attack2, "")
-		}
-	*/
-	/* 	fmt.Println(leftSpacer + spaceBetweenFighters + rightSpacer)
-	   	fmt.Println(leftBottomBorder + spaceBetweenFighters + rightBottomBorder) */
-
 }
 
 // validateNumber requires that the number provided was between min and max
@@ -771,6 +820,7 @@ func CreateFighter() *Fighter {
 		MaxHealth:                   250 + (answers.Weight - 90),
 		Conditions:                  make(map[modifiers.Condition]int),
 	}
+	fmt.Printf("fighter: %v\n", fighter.String())
 
 	fighter.DamageBonus = (fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance) * 10
 	fighter.ComplexityBonus = (fighter.AgilityStrengthBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance) * 5
@@ -834,50 +884,61 @@ func CreateFighter() *Fighter {
 	   			}
 	   			continue
 	   		}
-
-	   		// Ask for the description of the custom attack
-	   		customAttackName := ""
-	   		customAttackPrompt := &survey.Input{
-	   			Message: "Enter the description for the custom attack:",
-	   		}
-	   		err = survey.AskOne(customAttackPrompt, &customAttackName)
-	   		fmt.Println("customAttackName=" + customAttackName)
-	   		if err != nil {
-	   			fmt.Println("Error during the custom attack creation:", err)
-	   			break
-	   		}
-
-	   		// Validate the attack name and get the attack parameters using OpenAI API
-	   		validAttack, err := validateAttackName(customAttackName)
-	   		if err != nil {
-	   			fmt.Printf("Error validating attack name: %s\n", err)
-	   			continue
-	   		}
-
-	   		if validAttack {
-	   			fmt.Println("Valid attack")
-	   			customAttackType, err := getOpenAIResponse("COG_TYPE_ATTACK_PROMPT", customAttackName)
-	   			if err != nil {
-	   				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
-	   				continue
-	   			}
-	   			fmt.Println("customAttackType=", customAttackType.(string))
-
-	   			complexityValue, err := getOpenAIResponse("COG_COMPLEXITY_ATTACK_PROMPT", customAttackName)
-	   			if err != nil {
-	   				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
-	   				continue
-	   			}
-	   			fmt.Println("complexityValue=", complexityValue.(int))
-	   		}
-	   	}
-	   	fmt.Printf("attacks_outside= %v\n", attacks)
-
-	   	// Create the fighter attacks
-	   	fighter.Attacks = append(fighter.Attacks, attacks...)
-	   	fmt.Printf("fighter.Attacks= %v\n", fighter.Attacks)
-
 	*/
+
+	answer := true
+	prompt := &survey.Confirm{
+		Message: "Do you want to add custom combos to the fighter?",
+	}
+	survey.AskOne(prompt, &answer)
+	for answer {
+
+		// Ask for the description of the custom attack
+		customAttackName := ""
+		customAttackPrompt := &survey.Input{
+			Message: "Enter the description for the custom attack:",
+		}
+		err = survey.AskOne(customAttackPrompt, &customAttackName)
+		fmt.Println("customAttackName=" + customAttackName)
+		if err != nil {
+			fmt.Println("Error during the custom attack creation:", err)
+			break
+		}
+
+		// Validate the attack name and get the attack parameters using OpenAI API
+		validAttack, err := validateAttackName(customAttackName)
+		if err != nil {
+			fmt.Printf("Error validating attack name: %s\n", err)
+			continue
+		}
+
+		if validAttack {
+			fmt.Println("Valid attack")
+			customAttackType, err := GetOpenAIResponse("COG_TYPE_ATTACK_PROMPT", customAttackName, "", "", "string")
+			if err != nil {
+				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
+				continue
+			}
+			fmt.Println("customAttackType=", customAttackType.(string))
+
+			complexityValue, err := GetOpenAIResponse("COG_COMPLEXITY_ATTACK_PROMPT", customAttackName, "", "", "int")
+			if err != nil {
+				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
+				continue
+			}
+			fmt.Println("complexityValue=", complexityValue.(int))
+		}
+		//fighter.CustomAttacks = append(fighter.CustomAttacks, attacks...)
+		prompt := &survey.Confirm{
+			Message: "Do you want to add more custom combos to the fighter?",
+		}
+		survey.AskOne(prompt, &answer)
+	}
+
+	// Create the fighter attacks
+
+	//fmt.Printf("fighter.Attacks= %v\n", fighter.Attacks)
+
 	fmt.Printf("\n%s has been created!\n", fighter.Name)
 	//fighter.DisplayFighter()
 
@@ -910,7 +971,7 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 
 	// Generate random values for the computer fighter's attributes
 	computerFighter := &Fighter{
-		Name:                        "Computer Fighter",
+		Name:                        fighterNames[rand.Intn(len(fighterNames))],
 		Height:                      answers.Height,
 		Weight:                      answers.Weight,
 		Age:                         answers.Age,
@@ -919,10 +980,10 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 		DefenseOffenseBalance:       float32(answers.DefenseOffenseBalance) + (float32(answers.Height)-180)/10 - 2,
 		SpeedControlBalance:         float32(answers.SpeedControlBalance) + (float32(answers.Weight)-90)/15 + (float32(answers.Height)-180)/10 - 2,
 		IntelligenceInstinctBalance: float32(answers.IntelligenceInstinctBalance) - (float32(answers.Age)-39)/10 - 2,
-		Attacks:                     []*attack.Attack{},
-		CurrentHealth:               250 + (answers.Weight - 90),
-		MaxHealth:                   250 + (answers.Weight - 90),
-		Conditions:                  make(map[modifiers.Condition]int),
+		//		Attacks:                     []*attack.Attack{},
+		CurrentHealth: 250 + (answers.Weight - 90),
+		MaxHealth:     250 + (answers.Weight - 90),
+		Conditions:    make(map[modifiers.Condition]int),
 	}
 
 	computerFighter.DamageBonus = (computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance) * 10
@@ -950,50 +1011,10 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 // validateAttackName validates the given attack name using OpenAI API and returns the attack parameters
 func validateAttackName(attackName string) (bool, error) {
 
-	attackValidation, err := getOpenAIResponse("COG_VALIDATION_ATTACK_PROMPT", attackName)
+	attackValidation, err := GetOpenAIResponse("COG_VALIDATION_ATTACK_PROMPT", attackName, "", "", "string")
 	if err != nil {
 		return false, fmt.Errorf("error sending OpenAI API request: %s", err)
 	}
-	/* 	apiKey := os.Getenv("OPENAI_API_KEY")
-	   	if apiKey == "" {
-	   		return false, fmt.Errorf("OpenAI API key not found in environment variable OPENAI_API_KEY")
-	   	}
-
-	   	client := openai.NewClient(apiKey)
-
-	   	// Define the prompt template
-	   	promptTemplate := os.Getenv("COG_VALIDATION_ATTACK_PROMPT")
-
-	   	// Send the prompt to OpenAI API and get the response
-	   	prompt := fmt.Sprintf(promptTemplate, attackName)
-
-	   	response, err := client.CreateChatCompletion(
-	   		context.Background(),
-
-	   		openai.ChatCompletionRequest{
-	   			Model:     openai.GPT3Dot5Turbo,
-	   			MaxTokens: 3,
-	   			Messages: []openai.ChatCompletionMessage{
-	   				{
-	   					Role:    openai.ChatMessageRoleUser,
-	   					Content: prompt,
-	   				},
-	   			},
-	   		},
-	   	)
-	   	if err != nil {
-	   		return false, fmt.Errorf("error sending OpenAI API request: %s", err)
-	   	}
-
-	   	fmt.Println(response.Choices[0].Message.Content)
-	   	// Parse the response and extract integer answer
-	   	reply := response.Choices[0].Message.Content
-
-	   	// Parse the response to confirm if attack is valid
-	   	//reply := response.Choices[0].Message.Content
-	   	client = nil
-	*/
-	//fmt.Println("attackValidation=", attackValidation)
 	reply := attackValidation.(string)
 
 	if strings.Contains(reply, "Invalid") {
@@ -1007,61 +1028,67 @@ func validateAttackName(attackName string) (bool, error) {
 	return false, fmt.Errorf("Unknown response from OpenAI API: %s", reply)
 }
 
-// Get integer answer from OpenAI API
-func getOpenAIResponse(promptEnvVariable string, promptData string) (interface{}, error) {
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		return 0, fmt.Errorf("OpenAI API key not found in environment variable OPENAI_API_KEY")
+// Get answer from OpenAI API Proxy
+func GetOpenAIResponse(promptEnvVariable string, promptData1 string, promptData2 string, promptData3 string, responseType string) (interface{}, error) {
+	proxyURL := os.Getenv("OPENAI_PROXY_URL")
+	if proxyURL == "" {
+		return nil, fmt.Errorf("OpenAI proxy URL not found in environment variable OPENAI_PROXY_URL")
 	}
 
-	client := openai.NewClient(apiKey)
-
-	promptTemplate := os.Getenv(promptEnvVariable)
-
-	if promptTemplate == "" {
-		return 0, fmt.Errorf("Prompt not found in the environment variable %s", promptEnvVariable)
+	data := proxyRequestData{
+		PromptTemplate: promptEnvVariable,
+		PromptData1:    promptData1,
+		PromptData2:    promptData2,
+		PromptData3:    promptData3,
+		ResponseType:   responseType,
 	}
 
-	// Send the prompt to OpenAI API and get the response
-	prompt := fmt.Sprintf(promptTemplate, promptData)
-
-	response, err := client.CreateChatCompletion(
-		context.Background(),
-
-		openai.ChatCompletionRequest{
-			Model:     openai.GPT3Dot5Turbo,
-			MaxTokens: 1000,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: prompt,
-				},
-			},
-		},
-	)
+	req := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(req)
+	req.SetRequestURI(proxyURL)
+	req.Header.SetContentType("application/json")
+	req.Header.SetMethod("POST")
+	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return 0, fmt.Errorf("Error sending OpenAI API request: %s", err)
+		return nil, fmt.Errorf("Error marshaling JSON: %v", err)
 	}
 
-	//fmt.Println("response.Choices[0].Message.Content=", response.Choices[0].Message.Content)
-	// Parse the response and extract integer answer
-	reply := response.Choices[0].Message.Content
-	re := regexp.MustCompile(`\[\[(\d+)\]\]`)
-	matchInt := re.FindStringSubmatch(reply)
-	//fmt.Println("matchInt=", matchInt)
-	if len(matchInt) > 1 {
-		//fmt.Println("Number:", matchInt[1])
-		return strconv.Atoi(matchInt[1])
-	}
-	re = regexp.MustCompile(`\[\[(\w+)\]\]`)
-	matchString := re.FindStringSubmatch(reply)
-	//fmt.Println("matchString=", matchString)
-	if len(matchString) > 1 {
-		//fmt.Println("String:", matchString[1])
-		return matchString[1], nil
+	req.SetBody(jsonData)
+
+	resp := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(resp)
+
+	client := &fasthttp.Client{}
+	err = client.Do(req, resp)
+	if err != nil {
+		return nil, fmt.Errorf("Request failed: %v", err)
 	}
 
-	return 0, fmt.Errorf("Can't parse OpenAI API response: %s", reply)
+	//fmt.Println("Response status:", resp.StatusCode())
+	//fmt.Println("Response body:", string(resp.Body()))
+	var proxyResponse proxyResponseData
+	err = json.Unmarshal(resp.Body(), &proxyResponse)
+	if err != nil {
+		return nil, fmt.Errorf("Error unmarshaling JSON: %v", err)
+	}
+
+	switch responseType {
+	case "int":
+		{
+			return proxyResponse.Int, nil
+		}
+	case "string":
+		{
+			return proxyResponse.String, nil
+		}
+	case "full":
+		{
+			return proxyResponse.Full, nil
+		}
+	default:
+		return nil, fmt.Errorf("Error parsing response")
+	}
+
 }
 
 // SaveFighterToFile saves a fighter object to a JSON file
