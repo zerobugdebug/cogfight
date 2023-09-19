@@ -40,7 +40,7 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go ui.RotatingPipe(stopChan, &wg)
-	situation := "Fight begins. Introduce yourselves and talk about fighters"
+	situation := "Fight not started yet. Commentators introduce themselves and talk about the fighters"
 	comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", playerFighter.String(), computerFighter.String(), situation, "full")
 	if err != nil {
 		fmt.Println("Can't get OpenAI response")
@@ -51,8 +51,10 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 	fmt.Println("\r" + comments.(string))
 	fmt.Scanln()
 
+	var situationDescription string
 	// Fight until one of the fighters' health is reduced to zero
 	for playerFighter.CurrentHealth > 0 && computerFighter.CurrentHealth > 0 {
+		situationDescription = ""
 		// Determine who is attacking and who is defending based on the current turn
 		if currentTurn%2 != 0 {
 			attacker = playerFighter
@@ -71,6 +73,7 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 				case modifiers.SkipTurn:
 					{
 						skipTurn = value
+						situationDescription += attacker.Name + " is currently " + condition.String() + ". "
 					}
 				}
 			}
@@ -78,6 +81,7 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 
 		if skipTurn != 0 {
 			fmt.Printf("\n%sTurn %d: %s cannot attack, skipping turn!%s\n\n", clrGoodMessage, currentTurn, attacker.Name, clrReset)
+			situationDescription += attacker.Name + " cannot attack. "
 		} else {
 			var selectedAttack *attack.Attack
 			fmt.Printf("\n%sTurn %d: %s attacks %s!%s\n\n", clrGoodMessage, currentTurn, attacker.Name, defender.Name, clrReset)
@@ -87,8 +91,9 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 				selectedAttack = attack.NewDefaultAttacks().GetRandomAttack()
 				fmt.Printf("Selected attack: %s\n", color.CyanString(selectedAttack.Name))
 			}
-
-			attacker.ApplyAttack(defender, selectedAttack)
+			//situationDescription += attacker.Name + " executing " + selectedAttack.Name + ". "
+			attackResultText := attacker.ApplyAttack(defender, selectedAttack)
+			situationDescription += attackResultText
 		}
 
 		//Apply post-turn conditions
@@ -109,11 +114,28 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 			if attacker.Conditions[condition] < 1 {
 				delete(attacker.Conditions, condition)
 				defender.RemoveCondition(attacker, condition)
+				situationDescription += attacker.Name + " is not " + condition.String() + " anymore. "
 			}
 
 		}
-		situation := "Fight begins. Introduce yourselves and talk about fighters"
-		fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", attacker.String(), defender.String(), situation, "full")
+		if defender.CurrentHealth < 0 {
+			situationDescription += defender.Name + " is knocked out. "
+		}
+		if attacker.CurrentHealth < 0 {
+			situationDescription += attacker.Name + " lost consciousness. "
+		}
+		wg.Add(1)
+		go ui.RotatingPipe(stopChan, &wg)
+		situation := fmt.Sprintf("Turn %d: %s attacks %s. %s", currentTurn, attacker.Name, defender.Name, situationDescription)
+		//fmt.Printf("situation: %v\n", situation)
+		comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", attacker.String(), defender.String(), situation, "full")
+		if err != nil {
+			fmt.Println("Can't get OpenAI response")
+			return nil
+		}
+		stopChan <- true
+		wg.Wait()
+		fmt.Println("\r" + comments.(string))
 		currentTurn++
 		fmt.Scanln()
 	}

@@ -327,7 +327,7 @@ func (f *Fighter) RemoveCondition(opponent *Fighter, condition modifiers.Conditi
 	}
 }
 
-func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) {
+func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) string {
 	modifiedAttack := &attack.Attack{
 		Name:           originalAttack.Name,
 		Type:           originalAttack.Type,
@@ -340,6 +340,7 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 	}
 
 	sureStrike := 0
+	result := ""
 	//skipTurn := 0
 
 	//Calculate bonuses/penalties from opponent conditions
@@ -349,6 +350,7 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 			case modifiers.SureStrike:
 				{
 					sureStrike = value
+					result += opponent.Name + " is currently " + condition.String() + ". "
 				}
 			}
 		}
@@ -373,18 +375,25 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 	// 	fmt.Println("Can't attack, skipping...")
 	// } else {
 	// Determine the skill of the attacked
+	result += f.Name + " executing " + modifiedAttack.Name + ". "
 	attackComplexity := attack.Clamp(modifiedAttack.Complexity, attack.MinComplexity, attack.MaxComplexity)
 	fmt.Printf("Complexity: %s =>  ", color.HiMagentaString("%.1f%%", attackComplexity))
+	result += fmt.Sprintf("Attack complexity is %.f out of 100. ", attackComplexity)
 	if 100*rand.Float32() > attackComplexity {
 		color.HiGreen("Attack performed flawlessly!")
+		result += "Attack executed successfully! "
 		// Determine the attack hit chance
 		attackHitChance := attack.Clamp(modifiedAttack.HitChance, attack.MinHitChance, attack.MaxHitChance)
 		fmt.Printf("Hit Chance: %s => ", color.HiMagentaString("%.1f%%", attackHitChance))
+		result += fmt.Sprintf("Attack hit chance is %.f out of 100. ", attackHitChance)
 		if 100*rand.Float32() < attackHitChance || sureStrike == 1 {
+			result += "Attack sucessfully hit the " + opponent.Name + ". "
 			color.HiGreen("Successfull hit!")
 			attackBlockChance := attack.Clamp(modifiedAttack.BlockChance, attack.MinBlockChance, attack.MaxBlockChance)
 			fmt.Printf("Block Chance: %s => ", color.HiMagentaString("%.1f%%", attackBlockChance))
+			result += fmt.Sprintf("Chance of %s to block the attack is %.f out of 100. ", opponent.Name, attackHitChance)
 			if 100*rand.Float32() > attackBlockChance || sureStrike == 1 {
+				result += opponent.Name + " was not able to block the attack. "
 				color.HiGreen("Attack not blocked!")
 				attackDamage = attack.Clamp(modifiedAttack.Damage, attack.MinDamage, attack.MaxDamage)
 				attackSpecialChance := attack.Clamp(modifiedAttack.SpecialChance, attack.MinSpecialChance, attack.MaxSpecialChance)
@@ -400,7 +409,7 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 						f.AddCondition(opponent, modifiedAttack.Type.Special())
 					}
 					opponent.Conditions[modifiedAttack.Type.Special()] = modifiers.DefaultConditionAttributes[modifiedAttack.Type.Special()][modifiers.Duration]
-
+					result += opponent.Name + " become " + modifiedAttack.Type.Special().String() + ". "
 					//}
 					/* 						switch modifiedAttack.Type.Special() {
 					   						case modifiers.Bleeding:
@@ -417,12 +426,16 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 				//fmt.Printf("%s%s takes %d damage! (%d/%d)%s\n", clrBadMessage, defender.Name, int(attackDamage), defender.CurrentHealth, defender.MaxHealth, clrReset)
 			} else {
 				color.HiRed("Attack blocked!")
+				result += opponent.Name + " blocked the attack. "
 			}
 		} else {
 			color.HiRed("Missed!")
+			result += f.Name + " attack missed the " + opponent.Name + ". "
 		}
 	} else {
 		color.HiRed(f.Name + " failed to execute attack!")
+		result += f.Name + " failed to execute attack! "
+
 	}
 	//}
 
@@ -434,6 +447,7 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 			case modifiers.DamageMult:
 				{
 					attackDamage = attackDamage * float32(value)
+					result += f.Name + " executed " + condition.String() + ". "
 				}
 			}
 		}
@@ -442,7 +456,9 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 		//fmt.Printf("Damage dealt: %s\n", color.HiRedString("%.1f%%", attackDamage))
 		opponent.CurrentHealth -= int(attackDamage)
 		fmt.Printf("%s takes %s damage! (%s/%s)\n", color.HiBlueString(opponent.Name), color.HiRedString("%d", int(attackDamage)), color.HiBlueString("%d", opponent.CurrentHealth), color.HiBlueString("%d", opponent.MaxHealth))
+		result += fmt.Sprintf("%s takes %.f out of 100 damage. ", opponent.Name, attackDamage)
 	}
+	return result
 
 	//Calculate effect from attacker conditions
 	/* 	for condition := range f.Conditions {
@@ -1030,6 +1046,7 @@ func validateAttackName(attackName string) (bool, error) {
 
 // Get answer from OpenAI API Proxy
 func GetOpenAIResponse(promptEnvVariable string, promptData1 string, promptData2 string, promptData3 string, responseType string) (interface{}, error) {
+	//fmt.Printf("promptEnvVariable: %v\n", promptEnvVariable)
 	proxyURL := os.Getenv("OPENAI_PROXY_URL")
 	if proxyURL == "" {
 		return nil, fmt.Errorf("OpenAI proxy URL not found in environment variable OPENAI_PROXY_URL")
@@ -1054,7 +1071,7 @@ func GetOpenAIResponse(promptEnvVariable string, promptData1 string, promptData2
 	}
 
 	req.SetBody(jsonData)
-
+	//fmt.Printf("req: %v\n", req)
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
 
