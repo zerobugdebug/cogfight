@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	MaxHitChance         float32 = 99
+	MaxHitChance         float64 = 99
 	MinHitChance                 = 1
 	MaxBlockChance               = 95
 	MinBlockChance               = 0
@@ -18,7 +18,7 @@ const (
 	MaxSpecialChance             = 100
 	MinSpecialChance             = 5
 	MinDamage                    = 5
-	MaxDamage                    = 1000
+	MaxDamage                    = 100
 )
 
 // AttackType represents the type of a fighting move
@@ -125,12 +125,12 @@ func (at AttackType) Special() modifiers.Condition {
 type Attack struct {
 	Name           string
 	Type           AttackType
-	Damage         float32
-	Complexity     float32
-	HitChance      float32
-	BlockChance    float32
-	CriticalChance float32
-	SpecialChance  float32
+	Damage         float64
+	Complexity     float64
+	HitChance      float64
+	BlockChance    float64
+	CriticalChance float64
+	SpecialChance  float64
 }
 
 // Attacks represents a structure to hold the attacks
@@ -224,7 +224,7 @@ func (attacks *Attacks) GetRandomAttack() *Attack {
 	return attacks.GetAttacksByType(attackType)[rand.Intn(attacksNum)]
 }
 
-func Clamp(val, min, max float32) float32 {
+func Clamp(val, min, max float64) float64 {
 	if val < min {
 		return min
 	} else if val > max {

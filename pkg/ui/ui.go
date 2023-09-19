@@ -18,9 +18,9 @@ const (
 	Right
 )
 
-func ScalePrint(value, min, max float32, colorLeft func(a ...interface{}) string, colorRight func(a ...interface{}) string, length int) string {
+func ScalePrint(value, min, max float64, colorLeft func(a ...interface{}) string, colorRight func(a ...interface{}) string, length int) string {
 	normalizedValue := (value - min) / (max - min)
-	position := int(math.Round(float64(normalizedValue * float32(length))))
+	position := int(math.Round(float64(normalizedValue * float64(length))))
 
 	leftString := colorLeft(strings.Repeat(" ", position))
 	//middleString := "|"
@@ -29,7 +29,7 @@ func ScalePrint(value, min, max float32, colorLeft func(a ...interface{}) string
 	return leftString + rightString
 }
 
-func DoubleScalePrint(value, min, center, max float32, colorLeft func(a ...interface{}) string, colorRight func(a ...interface{}) string, colorBack func(a ...interface{}) string, length int) string {
+func DoubleScalePrint(value, min, center, max float64, colorLeft func(a ...interface{}) string, colorRight func(a ...interface{}) string, colorBack func(a ...interface{}) string, length int) string {
 
 	if value >= center {
 		return ScalePrint(center, min, center, colorBack, colorLeft, length/2) + colorRight("\x1B[30m│\x1B[0m") + ScalePrint(value, center, max, colorRight, colorBack, length/2)
@@ -103,7 +103,7 @@ func BoxPrint(minWidth int, colorFunc func(a ...interface{}) string, lines []str
 	return box
 }
 
-func ColorModifiedValue(value, delta float32, format string, colorMore func(a ...interface{}) string, colorLess func(a ...interface{}) string) string {
+func ColorModifiedValue(value, delta float64, format string, colorMore func(a ...interface{}) string, colorLess func(a ...interface{}) string) string {
 	if delta < 0 {
 		return colorLess(fmt.Sprintf(format, value))
 	} else {

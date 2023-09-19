@@ -21,6 +21,12 @@ import (
 
 const (
 	numAttacks int = 3
+	minHeight      = 160
+	maxHeight      = 200
+	minWeight      = 60
+	maxWeight      = 120
+	minAge         = 18
+	maxAge         = 60
 )
 
 var fighterNames = []string{
@@ -83,22 +89,22 @@ type Fighter struct {
 	Height                      int
 	Weight                      int
 	Age                         int
-	AgilityStrengthBalance      float32
-	BurstEnduranceBalance       float32
-	DefenseOffenseBalance       float32
-	SpeedControlBalance         float32
-	IntelligenceInstinctBalance float32
-	DamageBonus                 float32
-	ComplexityBonus             float32
-	HitChanceBonus              float32
-	BlockChanceBonus            float32
-	CriticalChanceBonus         float32
-	SpecialChanceBonus          float32
-	TempDamageBonus             float32
-	TempComplexityBonus         float32
-	TempHitChanceBonus          float32
-	TempBlockChanceBonus        float32
-	TempSpecialChanceBonus      float32
+	AgilityStrengthBalance      float64
+	BurstEnduranceBalance       float64
+	DefenseOffenseBalance       float64
+	SpeedControlBalance         float64
+	IntelligenceInstinctBalance float64
+	DamageBonus                 float64
+	ComplexityBonus             float64
+	HitChanceBonus              float64
+	BlockChanceBonus            float64
+	CriticalChanceBonus         float64
+	SpecialChanceBonus          float64
+	TempDamageBonus             float64
+	TempComplexityBonus         float64
+	TempHitChanceBonus          float64
+	TempBlockChanceBonus        float64
+	TempSpecialChanceBonus      float64
 	CustomAttacks               []*attack.Attack
 	Conditions                  map[modifiers.Condition]int
 	CurrentHealth               int
@@ -119,21 +125,82 @@ type proxyResponseData struct {
 	Full   string `json:"full,omitempty"`
 }
 
+func getDescriptions(valueType string) []string {
+	switch valueType {
+	case "weight":
+		return []string{"Very lightweight", "Lightweight", "Middleweight", "Heavyweight", "Very heavyweight"}
+	case "age":
+		return []string{"Very young", "Young", "Average", "Old", "Very old"}
+	case "height":
+		return []string{"Very short", "Short", "Average", "Tall", "Very tall"}
+	case "complexity":
+		return []string{"Basic", "Moderate", "Advanced", "Expert", "Master"}
+	default:
+		return []string{"Very low", "Low", "Average", "High", "Very high"}
+	}
+}
+
+// Function with valueType
+func getPercentileWithType(value, min, max float64, valueType string) string {
+	return getPercentileDesc(value, min, max, getDescriptions(valueType))
+}
+
+// Function without valueType (default behavior)
+func getPercentileDefault(value, min, max float64) string {
+	return getPercentileDesc(value, min, max, getDescriptions(""))
+}
+
+func getPercentileDesc(value, min, max float64, descriptions []string) string {
+	if value <= min {
+		return descriptions[0]
+	}
+	if value >= max {
+		return descriptions[len(descriptions)-1]
+	}
+
+	rangePerGroup := (max - min) / float64(len(descriptions))
+	index := int((value - min) / rangePerGroup)
+
+	if index >= len(descriptions) {
+		index = len(descriptions) - 1
+	}
+
+	return descriptions[index]
+}
+
 func (f *Fighter) String() string {
 	text := ""
-	var scaleRange float32 = 8
+	var scaleRange float64 = 8
 
-	text = fmt.Sprintf("Name: %s, Height: %d cm, Weight %d kg, Age %d years\n", f.Name, f.Height, f.Weight, f.Age)
-	text += fmt.Sprintf("Agility: %.f, Strength: %.f, ", scaleRange-f.AgilityStrengthBalance, scaleRange+f.AgilityStrengthBalance)
-	text += fmt.Sprintf("Burst: %.f, Endurance: %.f, ", scaleRange-f.BurstEnduranceBalance, scaleRange+f.BurstEnduranceBalance)
-	text += fmt.Sprintf("Defense: %.f, Offense: %.f, ", scaleRange-f.DefenseOffenseBalance, scaleRange+f.DefenseOffenseBalance)
-	text += fmt.Sprintf("Speed: %.f, Control: %.f, ", scaleRange-f.SpeedControlBalance, scaleRange+f.SpeedControlBalance)
-	text += fmt.Sprintf("Intelligence: %.f, Instinct: %.f\n", scaleRange-f.IntelligenceInstinctBalance, scaleRange+f.IntelligenceInstinctBalance)
+	text = fmt.Sprintf("Name: %s\n", f.Name)
+	text += fmt.Sprintf("Height: %s\n", getPercentileWithType(float64(f.Height), minHeight, maxHeight, "height"))
+	text += fmt.Sprintf("Weight: %s\n", getPercentileWithType(float64(f.Weight), minWeight, maxWeight, "weight"))
+	text += fmt.Sprintf("Age: %s\n", getPercentileWithType(float64(f.Age), minAge, maxAge, "age"))
+	text += fmt.Sprintf("%s agility (%.f), ", getPercentileDefault(scaleRange-f.AgilityStrengthBalance, 0, scaleRange*2), scaleRange-f.AgilityStrengthBalance)
+	text += fmt.Sprintf("%s strength (%.f), ", getPercentileDefault(scaleRange+f.AgilityStrengthBalance, 0, scaleRange*2), scaleRange+f.AgilityStrengthBalance)
+	text += fmt.Sprintf("%s burst (%.f), ", getPercentileDefault(scaleRange-f.BurstEnduranceBalance, 0, scaleRange*2), scaleRange-f.BurstEnduranceBalance)
+	text += fmt.Sprintf("%s endurance (%.f), ", getPercentileDefault(scaleRange+f.BurstEnduranceBalance, 0, scaleRange*2), scaleRange+f.BurstEnduranceBalance)
+	text += fmt.Sprintf("%s defense (%.f), ", getPercentileDefault(scaleRange-f.DefenseOffenseBalance, 0, scaleRange*2), scaleRange-f.DefenseOffenseBalance)
+	text += fmt.Sprintf("%s offense (%.f), ", getPercentileDefault(scaleRange+f.DefenseOffenseBalance, 0, scaleRange*2), scaleRange+f.DefenseOffenseBalance)
+	text += fmt.Sprintf("%s speed (%.f), ", getPercentileDefault(scaleRange-f.SpeedControlBalance, 0, scaleRange*2), scaleRange-f.SpeedControlBalance)
+	text += fmt.Sprintf("%s control (%.f), ", getPercentileDefault(scaleRange+f.SpeedControlBalance, 0, scaleRange*2), scaleRange+f.SpeedControlBalance)
+	text += fmt.Sprintf("%s intelligence (%.f), ", getPercentileDefault(scaleRange-f.IntelligenceInstinctBalance, 0, scaleRange*2), scaleRange-f.IntelligenceInstinctBalance)
+	text += fmt.Sprintf("%s instinct (%.f)\n", getPercentileDefault(scaleRange+f.IntelligenceInstinctBalance, 0, scaleRange*2), scaleRange+f.IntelligenceInstinctBalance)
+
+	/* 	text = fmt.Sprintf("Name: %s, Height: %d cm, Weight %d kg, Age %d years\n", f.Name, f.Height, f.Weight, f.Age)
+	   	text += fmt.Sprintf("Agility: %.f, Strength: %.f, ", scaleRange-f.AgilityStrengthBalance, scaleRange+f.AgilityStrengthBalance)
+	   	text += fmt.Sprintf("Burst: %.f, Endurance: %.f, ", scaleRange-f.BurstEnduranceBalance, scaleRange+f.BurstEnduranceBalance)
+	   	text += fmt.Sprintf("Defense: %.f, Offense: %.f, ", scaleRange-f.DefenseOffenseBalance, scaleRange+f.DefenseOffenseBalance)
+	   	text += fmt.Sprintf("Speed: %.f, Control: %.f, ", scaleRange-f.SpeedControlBalance, scaleRange+f.SpeedControlBalance)
+	   	text += fmt.Sprintf("Intelligence: %.f, Instinct: %.f\n", scaleRange-f.IntelligenceInstinctBalance, scaleRange+f.IntelligenceInstinctBalance)
+	*/
+
 	conditionsText := []string{}
 	for condition := range f.Conditions {
 		conditionsText = append(conditionsText, fmt.Sprintf("%s", condition.String()))
 	}
 	text += fmt.Sprintf("Conditions: %s", strings.Join(conditionsText, ", "))
+	fmt.Printf("text: %v\n", text)
 	return text
 }
 
@@ -269,27 +336,27 @@ func (f *Fighter) AddCondition(opponent *Fighter, condition modifiers.Condition)
 		switch modifier {
 		case modifiers.BlockChance:
 			{
-				opponent.TempBlockChanceBonus += float32(value)
+				opponent.TempBlockChanceBonus += float64(value)
 			}
 		case modifiers.HitChance:
 			{
-				opponent.TempHitChanceBonus += float32(value)
+				opponent.TempHitChanceBonus += float64(value)
 			}
 		case modifiers.Damage:
 			{
-				opponent.TempDamageBonus += float32(value)
+				opponent.TempDamageBonus += float64(value)
 			}
 		case modifiers.Complexity:
 			{
-				opponent.TempComplexityBonus += float32(value)
+				opponent.TempComplexityBonus += float64(value)
 			}
 		case modifiers.OpponentHitChance:
 			{
-				f.TempHitChanceBonus += float32(value)
+				f.TempHitChanceBonus += float64(value)
 			}
 		case modifiers.OpponentBlockChance:
 			{
-				f.TempBlockChanceBonus += float32(value)
+				f.TempBlockChanceBonus += float64(value)
 			}
 		}
 	}
@@ -301,27 +368,27 @@ func (f *Fighter) RemoveCondition(opponent *Fighter, condition modifiers.Conditi
 		switch modifier {
 		case modifiers.BlockChance:
 			{
-				opponent.TempBlockChanceBonus -= float32(value)
+				opponent.TempBlockChanceBonus -= float64(value)
 			}
 		case modifiers.HitChance:
 			{
-				opponent.TempHitChanceBonus -= float32(value)
+				opponent.TempHitChanceBonus -= float64(value)
 			}
 		case modifiers.Damage:
 			{
-				opponent.TempDamageBonus -= float32(value)
+				opponent.TempDamageBonus -= float64(value)
 			}
 		case modifiers.Complexity:
 			{
-				opponent.TempComplexityBonus -= float32(value)
+				opponent.TempComplexityBonus -= float64(value)
 			}
 		case modifiers.OpponentHitChance:
 			{
-				f.TempHitChanceBonus -= float32(value)
+				f.TempHitChanceBonus -= float64(value)
 			}
 		case modifiers.OpponentBlockChance:
 			{
-				f.TempBlockChanceBonus -= float32(value)
+				f.TempBlockChanceBonus -= float64(value)
 			}
 		}
 	}
@@ -369,40 +436,45 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 
 	} */
 
-	var attackDamage float32 = 0
-	//Determine if we can attack
-	// if skipTurn == 1 {
-	// 	fmt.Println("Can't attack, skipping...")
-	// } else {
+	var attackDamage float64 = 0
+	var chance float64 = 0
+
 	// Determine the skill of the attacked
 	result += f.Name + " executing " + modifiedAttack.Name + ". "
 	attackComplexity := attack.Clamp(modifiedAttack.Complexity, attack.MinComplexity, attack.MaxComplexity)
 	fmt.Printf("Complexity: %s =>  ", color.HiMagentaString("%.1f%%", attackComplexity))
-	result += fmt.Sprintf("Attack complexity is %.f out of 100. ", attackComplexity)
-	if 100*rand.Float32() > attackComplexity {
-		color.HiGreen("Attack performed flawlessly!")
+	result += fmt.Sprintf("That is a %s level attack. ", getPercentileWithType(attackComplexity, attack.MinComplexity, attack.MaxComplexity, "complexity"))
+	chance = 100 * rand.Float64()
+	if chance > attackComplexity {
+		fmt.Printf("%s %s\n", color.HiGreenString("Attack performed flawlessly!"), color.HiBlackString("[Dice = %.1f%%]", chance))
+		//color.HiGreen("Attack performed flawlessly!")
+		//color.HiBlack(" [Dice = %.1f%%]\n", chance)
+		//		fmt.Printf("%s (Dice = %.1f%%)\n", color.HiGreenString("Attack performed flawlessly!"), chance)
 		result += "Attack executed successfully! "
 		// Determine the attack hit chance
 		attackHitChance := attack.Clamp(modifiedAttack.HitChance, attack.MinHitChance, attack.MaxHitChance)
 		fmt.Printf("Hit Chance: %s => ", color.HiMagentaString("%.1f%%", attackHitChance))
-		result += fmt.Sprintf("Attack hit chance is %.f out of 100. ", attackHitChance)
-		if 100*rand.Float32() < attackHitChance || sureStrike == 1 {
+		result += fmt.Sprintf("Attack has a %s chance to hit. ", getPercentileDefault(attackHitChance, attack.MinHitChance, attack.MaxHitChance))
+		chance = 100 * rand.Float64()
+		if chance < attackHitChance || sureStrike == 1 {
+			fmt.Printf("%s %s\n", color.HiGreenString("Successfull hit!"), color.HiBlackString("[Dice = %.1f%%]", chance))
 			result += "Attack sucessfully hit the " + opponent.Name + ". "
-			color.HiGreen("Successfull hit!")
 			attackBlockChance := attack.Clamp(modifiedAttack.BlockChance, attack.MinBlockChance, attack.MaxBlockChance)
 			fmt.Printf("Block Chance: %s => ", color.HiMagentaString("%.1f%%", attackBlockChance))
-			result += fmt.Sprintf("Chance of %s to block the attack is %.f out of 100. ", opponent.Name, attackHitChance)
-			if 100*rand.Float32() > attackBlockChance || sureStrike == 1 {
+			result += fmt.Sprintf("%s has a %s chance to block the attack. ", opponent.Name, getPercentileDefault(attackBlockChance, attack.MinBlockChance, attack.MaxBlockChance))
+			chance = 100 * rand.Float64()
+			if chance > attackBlockChance || sureStrike == 1 {
+				fmt.Printf("%s %s\n", color.HiGreenString("Attack not blocked!"), color.HiBlackString("[Dice = %.1f%%]", chance))
 				result += opponent.Name + " was not able to block the attack. "
-				color.HiGreen("Attack not blocked!")
 				attackDamage = attack.Clamp(modifiedAttack.Damage, attack.MinDamage, attack.MaxDamage)
 				attackSpecialChance := attack.Clamp(modifiedAttack.SpecialChance, attack.MinSpecialChance, attack.MaxSpecialChance)
 				fmt.Printf("Special: %s, %s => ", color.HiBlueString(modifiedAttack.Type.Special().ActionString()), color.HiMagentaString("%.1f%%", attackSpecialChance))
 				//fmt.Printf("Current Special: %s\n", color.HiBlueString(modifiedAttack.Type.Special().ActionString()))
-				if 100*rand.Float32() < attackSpecialChance {
-					color.HiGreen("Success! Opponent got " + modifiedAttack.Type.Special().String())
+				chance = 100 * rand.Float64()
+				if chance < attackSpecialChance {
+					fmt.Printf("%s %s\n", color.HiGreenString("Success! Opponent got "+modifiedAttack.Type.Special().String()), color.HiBlackString("[Dice = %.1f%%]", chance))
 					//if modifiedAttack.Type.Special() == modifiers.CriticalHit {
-					//	attackDamage = attack.Clamp(attackDamage*float32(modifiers.DefaultConditionAttributes[modifiedAttack.Type.Special()][modifiers.DamageMult]), attack.MinDamage, attack.MaxDamage)
+					//	attackDamage = attack.Clamp(attackDamage*float64(modifiers.DefaultConditionAttributes[modifiedAttack.Type.Special()][modifiers.DamageMult]), attack.MinDamage, attack.MaxDamage)
 					//} else {
 					_, conditionExist := opponent.Conditions[modifiedAttack.Type.Special()]
 					if !conditionExist {
@@ -419,21 +491,21 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 					   						}
 					*/ //attackDamage = clamp(attackDamage*2, MinDamage, MaxDamage)
 				} else {
-					color.HiRed("Special failed!")
+					fmt.Printf("%s %s\n", color.HiRedString("Special failed!"), color.HiBlackString("[Dice = %.1f%%]", chance))
 				}
 				//fmt.Printf("Damage dealt: %s%.1f%s\n", clrDamage, attackDamage, clrReset)
 				//defender.CurrentHealth -= int(attackDamage)
 				//fmt.Printf("%s%s takes %d damage! (%d/%d)%s\n", clrBadMessage, defender.Name, int(attackDamage), defender.CurrentHealth, defender.MaxHealth, clrReset)
 			} else {
-				color.HiRed("Attack blocked!")
+				fmt.Printf("%s %s\n", color.HiRedString("Attack blocked!"), color.HiBlackString("[Dice = %.1f%%]", chance))
 				result += opponent.Name + " blocked the attack. "
 			}
 		} else {
-			color.HiRed("Missed!")
+			fmt.Printf("%s %s\n", color.HiRedString("Missed!"), color.HiBlackString("[Dice = %.1f%%]", chance))
 			result += f.Name + " attack missed the " + opponent.Name + ". "
 		}
 	} else {
-		color.HiRed(f.Name + " failed to execute attack!")
+		fmt.Printf("%s %s\n", color.HiRedString(f.Name+" failed to execute attack!"), color.HiBlackString("[Dice = %.1f%%]", chance))
 		result += f.Name + " failed to execute attack! "
 
 	}
@@ -446,7 +518,7 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 			switch modifier {
 			case modifiers.DamageMult:
 				{
-					attackDamage = attackDamage * float32(value)
+					attackDamage = attackDamage * float64(value)
 					result += f.Name + " executed " + condition.String() + ". "
 				}
 			}
@@ -456,8 +528,9 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 		//fmt.Printf("Damage dealt: %s\n", color.HiRedString("%.1f%%", attackDamage))
 		opponent.CurrentHealth -= int(attackDamage)
 		fmt.Printf("%s takes %s damage! (%s/%s)\n", color.HiBlueString(opponent.Name), color.HiRedString("%d", int(attackDamage)), color.HiBlueString("%d", opponent.CurrentHealth), color.HiBlueString("%d", opponent.MaxHealth))
-		result += fmt.Sprintf("%s takes %.f out of 100 damage. ", opponent.Name, attackDamage)
+		result += fmt.Sprintf("%s takes a %s damage", opponent.Name, getPercentileDefault(attackDamage, attack.MinDamage, attack.MaxDamage))
 	}
+	fmt.Printf("result: %v\n", result)
 	return result
 
 	//Calculate effect from attacker conditions
@@ -521,7 +594,7 @@ func DisplayFighters(f1, f2 *Fighter) {
 	//boxWidth := 50
 	numSpacesBetweenFighters := 10
 	spaceBetweenFighters := strings.Repeat(" ", numSpacesBetweenFighters)
-	var scaleRange float32 = 8.00
+	var scaleRange float64 = 8.00
 	scaleSize := 16
 
 	/*
@@ -569,7 +642,7 @@ func DisplayFighters(f1, f2 *Fighter) {
 
 	conditionsText := []string{}
 	textLeft := []string{}
-	var value float32
+	var value float64
 
 	textLeft = append(textLeft, "Name: "+f1.Name)
 	textLeft = append(textLeft, fmt.Sprintf("Height: %d", f1.Height))
@@ -602,7 +675,7 @@ func DisplayFighters(f1, f2 *Fighter) {
 	//textLeft = append(textLeft, fmt.Sprintf("%20s %7.2f%% %v", "Block Chance Bonus", f1.BlockChanceBonus, ui.DoubleScalePrint(f1.BlockChanceBonus, -100, 0, 100, red, green, hiblack, scaleSize)))
 	//textLeft = append(textLeft, fmt.Sprintf("%20s %7.2f%% %v", "Special Chance Bonus", f1.SpecialChanceBonus, ui.DoubleScalePrint(f1.SpecialChanceBonus, -100, 0, 100, red, green, hiblack, scaleSize)))
 	textLeft = append(textLeft, "")
-	textLeft = append(textLeft, fmt.Sprintf("%s %d/%d %v", "Health: ", f1.CurrentHealth, f1.MaxHealth, ui.ScalePrint(float32(f1.CurrentHealth), 0, float32(f1.MaxHealth), hiblue, hiblack, scaleSize*2)))
+	textLeft = append(textLeft, fmt.Sprintf("%s %d/%d %v", "Health: ", f1.CurrentHealth, f1.MaxHealth, ui.ScalePrint(float64(f1.CurrentHealth), 0, float64(f1.MaxHealth), hiblue, hiblack, scaleSize*2)))
 	textLeft = append(textLeft, "")
 
 	textRight := []string{}
@@ -639,7 +712,7 @@ func DisplayFighters(f1, f2 *Fighter) {
 	// textRight = append(textRight, fmt.Sprintf("%20s %7.2f%% %v", "Block Chance Bonus", f2.BlockChanceBonus, ui.DoubleScalePrint(f2.BlockChanceBonus, -100, 0, 100, red, green, hiblack, scaleSize)))
 	// textRight = append(textRight, fmt.Sprintf("%20s %7.2f%% %v", "Special Chance Bonus", f2.SpecialChanceBonus, ui.DoubleScalePrint(f2.SpecialChanceBonus, -100, 0, 100, red, green, hiblack, scaleSize)))
 	textRight = append(textRight, "")
-	textRight = append(textRight, fmt.Sprintf("%s %d/%d %v", "Health: ", f2.CurrentHealth, f2.MaxHealth, ui.ScalePrint(float32(f2.CurrentHealth), 0, float32(f2.MaxHealth), hiblue, hiblack, scaleSize*2)))
+	textRight = append(textRight, fmt.Sprintf("%s %d/%d %v", "Health: ", f2.CurrentHealth, f2.MaxHealth, ui.ScalePrint(float64(f2.CurrentHealth), 0, float64(f2.MaxHealth), hiblue, hiblack, scaleSize*2)))
 	textRight = append(textRight, "")
 
 	boxLeft := ui.BoxPrint(20, blue, textLeft)
@@ -703,7 +776,7 @@ func CreateFighter() *Fighter {
 			Help:    "Please enter your fighter height. Taller fighters will favour Strength, Offense and Control, while lower height will give benefits to Agility, Defense and Speed.",
 			Default: "180",
 		},
-		Validate: validateNumber(160, 200),
+		Validate: validateNumber(minHeight, maxHeight),
 	}
 	qs = append(qs, heightQuestion)
 
@@ -827,11 +900,11 @@ func CreateFighter() *Fighter {
 		Height:                      answers.Height,
 		Weight:                      answers.Weight,
 		Age:                         answers.Age,
-		AgilityStrengthBalance:      float32(answers.AgilityStrengthBalance) + (float32(answers.Weight)-90)/15 + (float32(answers.Height)-180)/10 - 2,
-		BurstEnduranceBalance:       float32(answers.BurstEnduranceBalance) + (float32(answers.Weight)-90)/15 - 2,
-		DefenseOffenseBalance:       float32(answers.DefenseOffenseBalance) + (float32(answers.Height)-180)/10 - 2,
-		SpeedControlBalance:         float32(answers.SpeedControlBalance) + (float32(answers.Weight)-90)/15 + (float32(answers.Height)-180)/10 - 2,
-		IntelligenceInstinctBalance: float32(answers.IntelligenceInstinctBalance) - (float32(answers.Age)-39)/10 - 2,
+		AgilityStrengthBalance:      float64(answers.AgilityStrengthBalance) + (float64(answers.Weight)-90)/15 + (float64(answers.Height)-180)/10 - 2,
+		BurstEnduranceBalance:       float64(answers.BurstEnduranceBalance) + (float64(answers.Weight)-90)/15 - 2,
+		DefenseOffenseBalance:       float64(answers.DefenseOffenseBalance) + (float64(answers.Height)-180)/10 - 2,
+		SpeedControlBalance:         float64(answers.SpeedControlBalance) + (float64(answers.Weight)-90)/15 + (float64(answers.Height)-180)/10 - 2,
+		IntelligenceInstinctBalance: float64(answers.IntelligenceInstinctBalance) - (float64(answers.Age)-39)/10 - 2,
 		CurrentHealth:               250 + (answers.Weight - 90),
 		MaxHealth:                   250 + (answers.Weight - 90),
 		Conditions:                  make(map[modifiers.Condition]int),
@@ -991,11 +1064,11 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 		Height:                      answers.Height,
 		Weight:                      answers.Weight,
 		Age:                         answers.Age,
-		AgilityStrengthBalance:      float32(answers.AgilityStrengthBalance) + (float32(answers.Weight)-90)/15 + (float32(answers.Height)-180)/10 - 2,
-		BurstEnduranceBalance:       float32(answers.BurstEnduranceBalance) + (float32(answers.Weight)-90)/15 - 2,
-		DefenseOffenseBalance:       float32(answers.DefenseOffenseBalance) + (float32(answers.Height)-180)/10 - 2,
-		SpeedControlBalance:         float32(answers.SpeedControlBalance) + (float32(answers.Weight)-90)/15 + (float32(answers.Height)-180)/10 - 2,
-		IntelligenceInstinctBalance: float32(answers.IntelligenceInstinctBalance) - (float32(answers.Age)-39)/10 - 2,
+		AgilityStrengthBalance:      float64(answers.AgilityStrengthBalance) + (float64(answers.Weight)-90)/15 + (float64(answers.Height)-180)/10 - 2,
+		BurstEnduranceBalance:       float64(answers.BurstEnduranceBalance) + (float64(answers.Weight)-90)/15 - 2,
+		DefenseOffenseBalance:       float64(answers.DefenseOffenseBalance) + (float64(answers.Height)-180)/10 - 2,
+		SpeedControlBalance:         float64(answers.SpeedControlBalance) + (float64(answers.Weight)-90)/15 + (float64(answers.Height)-180)/10 - 2,
+		IntelligenceInstinctBalance: float64(answers.IntelligenceInstinctBalance) - (float64(answers.Age)-39)/10 - 2,
 		//		Attacks:                     []*attack.Attack{},
 		CurrentHealth: 250 + (answers.Weight - 90),
 		MaxHealth:     250 + (answers.Weight - 90),
