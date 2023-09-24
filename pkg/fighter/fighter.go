@@ -17,7 +17,6 @@ import (
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
 	"github.com/zerobugdebug/cogfight/pkg/ui"
-
 )
 
 const (
@@ -825,7 +824,7 @@ func CreateFighter() *Fighter {
 		Prompt: &survey.Select{
 			Message: "Choose fighter burst/endurance balance:",
 			Options: []string{"Very high Burst, Very low Endurance", "High Burst, Low Endurance", "Balanced", "Low Burst, High Endurance", "Very low Burst, Very high Endurance"},
-			Help:    "This parameter determines the balance between Burst and Endurance. Fighters with high Burst will get better chances to hit, but high Endurance will allow to execute complex attacks with higher special chance",
+			Help:    "This parameter determines the balance between Burst and Endurance. Fighters with high Burst will be able to execute complex attacks with better chances to hit, but high Endurance will increase chance of special",
 			Default: "Balanced",
 		},
 	}
@@ -847,7 +846,7 @@ func CreateFighter() *Fighter {
 		Prompt: &survey.Select{
 			Message: "Choose fighter speed/control balance:",
 			Options: []string{"Very high Speed, Very low Control", "High Speed, Low Control", "Balanced", "Low Speed, High Control", "Very low Speed, Very high Control"},
-			Help:    "This parameter determines the balance between Speed and Control. Increasing Speed will improve your chances of perform complex attacks with better chance to hit, while high Control will increase chance of specials",
+			Help:    "This parameter determines the balance between Speed and Control. Increasing Speed will improve your chances of performing special attack, while high Control will allow to execute complex attacks with increased damage",
 			Default: "Balanced",
 		},
 	}
@@ -923,12 +922,12 @@ func CreateFighter() *Fighter {
 	}
 	fmt.Printf("fighter: %v\n", fighter.String())
 
-	fighter.DamageBonus = (2*fighter.AgilityStrengthBalance + fighter.DefenseOffenseBalance - fighter.SpeedControlBalance) * 5
-	fighter.ComplexityBonus = -(fighter.BurstEnduranceBalance - fighter.SpeedControlBalance - 2*fighter.IntelligenceInstinctBalance) * 5
-	fighter.HitChanceBonus = (fighter.DefenseOffenseBalance - 2*fighter.BurstEnduranceBalance - fighter.AgilityStrengthBalance) * 5
-	fighter.BlockChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.DefenseOffenseBalance - fighter.AgilityStrengthBalance) * 5
-	fighter.CriticalChanceBonus = (fighter.IntelligenceInstinctBalance + 2*fighter.SpeedControlBalance + fighter.BurstEnduranceBalance) * 5
-	fighter.SpecialChanceBonus = (fighter.IntelligenceInstinctBalance + 2*fighter.SpeedControlBalance + fighter.BurstEnduranceBalance) * 5
+	fighter.DamageBonus = (2*fighter.AgilityStrengthBalance + fighter.DefenseOffenseBalance + fighter.SpeedControlBalance) * 2
+	fighter.ComplexityBonus = (fighter.BurstEnduranceBalance - fighter.SpeedControlBalance + 2*fighter.IntelligenceInstinctBalance) * 2
+	fighter.HitChanceBonus = (fighter.DefenseOffenseBalance - fighter.BurstEnduranceBalance - fighter.AgilityStrengthBalance) * 2
+	fighter.BlockChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.DefenseOffenseBalance - fighter.AgilityStrengthBalance) * 2
+	fighter.CriticalChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.SpeedControlBalance + 2*fighter.BurstEnduranceBalance) * 2
+	fighter.SpecialChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.SpeedControlBalance + 2*fighter.BurstEnduranceBalance) * 2
 
 	/* 	defaultAttacks := attack.NewDefaultAttacks()
 	   	attacks := []*attack.Attack{}
@@ -1111,19 +1110,19 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 		Conditions:    make(map[modifiers.Condition]int),
 	} */
 
-/* 	computerFighter.DamageBonus = (computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance) * 10
-	computerFighter.ComplexityBonus = (computerFighter.AgilityStrengthBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 5
-	computerFighter.HitChanceBonus = (-computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance + computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 3
-	computerFighter.BlockChanceBonus = (-computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 3
-	computerFighter.CriticalChanceBonus = (computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance) * 10
-	computerFighter.SpecialChanceBonus = (computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance) * 10 */
+	/* 	computerFighter.DamageBonus = (computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance) * 10
+	   	computerFighter.ComplexityBonus = (computerFighter.AgilityStrengthBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 5
+	   	computerFighter.HitChanceBonus = (-computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance + computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 3
+	   	computerFighter.BlockChanceBonus = (-computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 3
+	   	computerFighter.CriticalChanceBonus = (computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance) * 10
+	   	computerFighter.SpecialChanceBonus = (computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance) * 10 */
 
-	computerFighter.DamageBonus = (2*computerFighter.AgilityStrengthBalance + computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance) * 5
-	computerFighter.ComplexityBonus = -(computerFighter.BurstEnduranceBalance - computerFighter.SpeedControlBalance - 2*computerFighter.IntelligenceInstinctBalance) * 5
-	computerFighter.HitChanceBonus = (computerFighter.DefenseOffenseBalance - 2*computerFighter.BurstEnduranceBalance - computerFighter.AgilityStrengthBalance) * 5
-	computerFighter.BlockChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.DefenseOffenseBalance - computerFighter.AgilityStrengthBalance) * 5
-	computerFighter.CriticalChanceBonus = (computerFighter.IntelligenceInstinctBalance + 2*computerFighter.SpeedControlBalance + computerFighter.BurstEnduranceBalance) * 5
-	computerFighter.SpecialChanceBonus = (computerFighter.IntelligenceInstinctBalance + 2*computerFighter.SpeedControlBalance + computerFighter.BurstEnduranceBalance) * 5
+	computerFighter.DamageBonus = (2*computerFighter.AgilityStrengthBalance + computerFighter.DefenseOffenseBalance + computerFighter.SpeedControlBalance) * 2
+	computerFighter.ComplexityBonus = (computerFighter.BurstEnduranceBalance - computerFighter.SpeedControlBalance + 2*computerFighter.IntelligenceInstinctBalance) * 2
+	computerFighter.HitChanceBonus = (computerFighter.DefenseOffenseBalance - computerFighter.BurstEnduranceBalance - computerFighter.AgilityStrengthBalance) * 2
+	computerFighter.BlockChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.DefenseOffenseBalance - computerFighter.AgilityStrengthBalance) * 2
+	computerFighter.CriticalChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.SpeedControlBalance + 2*computerFighter.BurstEnduranceBalance) * 2
+	computerFighter.SpecialChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.SpeedControlBalance + 2*computerFighter.BurstEnduranceBalance) * 2
 
 	/* defaultAttacks := attack.NewDefaultAttacks()
 	for range playerFighter.Attacks {
