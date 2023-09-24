@@ -1136,6 +1136,8 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 
 	fmt.Printf("\n%s has been generated!\n", computerFighter.Name)
 	fmt.Println(computerFighter.String())
+	return computerFighter
+
 }
 
 /*
