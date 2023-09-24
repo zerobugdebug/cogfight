@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -40,20 +41,27 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go ui.RotatingPipe(stopChan, &wg)
-	situation := "Fight not started yet. Commentators introduce themselves and talk about the fighters"
-	comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", playerFighter.String(), computerFighter.String(), situation, "full")
+	situation := fmt.Sprintf("Fight not started yet. Commentators introduce themselves and talk about the fighters\nFirst fighter: %s Second fighter: %s", playerFighter.String(), computerFighter.String())
+	var chatMessages []fighter.ChatMessage = []fighter.ChatMessage{{Role: "user", Content: situation}}
+	comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", chatMessages, "full")
 	if err != nil {
 		fmt.Println("Can't get OpenAI response")
 		return nil
 	}
 	stopChan <- true
 	wg.Wait()
-	fmt.Println("\r" + comments.(string))
+	strComments := strings.Replace(comments.(string), "\n\n", "\n", -1)
+	fmt.Println("\n" + strComments)
+	chatMessages = append(chatMessages, fighter.ChatMessage{Role: "assistant", Content: strComments})
 	fmt.Scanln()
 
 	var situationDescription string
+	//situationDescription = fmt.Sprintf("First fighter: %s Second fighter: %s", playerFighter.String(), computerFighter.String())
+	//var chatMessages []fighter.ChatMessage = []fighter.ChatMessage{{Role: "system", Content: situationDescription}}
 	// Fight until one of the fighters' health is reduced to zero
 	for playerFighter.CurrentHealth > 0 && computerFighter.CurrentHealth > 0 {
+		//		prevSituationDescription = "Previous rounds: \n" + situationDescription + "\n Current round to be described: \n"
+		//prevSituationDescription = situationDescription
 		situationDescription = ""
 		// Determine who is attacking and who is defending based on the current turn
 		if currentTurn%2 != 0 {
@@ -126,16 +134,29 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 		}
 		wg.Add(1)
 		go ui.RotatingPipe(stopChan, &wg)
+		//situation := fmt.Sprintf("Previous rounds:\n %s\n Current round to be described:\nTurn %d: %s attacks %s. %s", prevSituationDescription, currentTurn, attacker.Name, defender.Name, situationDescription)
 		situation := fmt.Sprintf("Turn %d: %s attacks %s. %s", currentTurn, attacker.Name, defender.Name, situationDescription)
-		//fmt.Printf("situation: %v\n", situation)
-		comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", attacker.String(), defender.String(), situation, "full")
+		chatMessages = append(chatMessages, fighter.ChatMessage{Role: "user", Content: situation})
+		// fmt.Printf("\n-------------------------------\n")
+		// fmt.Printf("prevSituationDescription: %v\n", prevSituationDescription)
+		// fmt.Printf("\n-------------------------------\n")
+		// fmt.Printf("situationDescription: %v\n", situationDescription)
+		// fmt.Printf("\n-------------------------------\n")
+		// fmt.Printf("situation: %v\n", situation)
+		comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", chatMessages, "full")
 		if err != nil {
 			fmt.Println("Can't get OpenAI response")
 			return nil
 		}
 		stopChan <- true
 		wg.Wait()
-		fmt.Println("\r" + comments.(string))
+		strComments := strings.Replace(comments.(string), "\n\n", "\n", -1)
+		fmt.Println("\n" + strComments)
+		chatMessages = append(chatMessages, fighter.ChatMessage{Role: "assistant", Content: strComments})
+		//prevSituationDescription = fmt.Sprintf("%s\nTurn %d: %s attacks %s. \n%s\n%s\n", prevSituationDescription, currentTurn, attacker.Name, defender.Name, situationDescription, comments.(string))
+		//fmt.Printf("\n-------------------------------\n")
+		//fmt.Printf("chatMessages: %v\n", chatMessages)
+		//fmt.Printf("\n-------------------------------\n")
 		currentTurn++
 		fmt.Scanln()
 	}

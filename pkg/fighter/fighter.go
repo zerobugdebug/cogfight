@@ -17,6 +17,7 @@ import (
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
 	"github.com/zerobugdebug/cogfight/pkg/ui"
+
 )
 
 const (
@@ -113,10 +114,16 @@ type Fighter struct {
 
 type proxyRequestData struct {
 	PromptTemplate string `json:"prompt_template"`
-	PromptData1    string `json:"prompt_data1"`
-	PromptData2    string `json:"prompt_data2,omitempty"`
-	PromptData3    string `json:"prompt_data3,omitempty"`
-	ResponseType   string `json:"response_type"`
+	// PromptData1    string        `json:"prompt_data1"`
+	// PromptData2    string        `json:"prompt_data2,omitempty"`
+	// PromptData3    string        `json:"prompt_data3,omitempty"`
+	Messages     []ChatMessage `json:"messages"`
+	ResponseType string        `json:"response_type"`
+}
+
+type ChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
 type proxyResponseData struct {
@@ -199,8 +206,8 @@ func (f *Fighter) String() string {
 	for condition := range f.Conditions {
 		conditionsText = append(conditionsText, fmt.Sprintf("%s", condition.String()))
 	}
-	text += fmt.Sprintf("Conditions: %s", strings.Join(conditionsText, ", "))
-	fmt.Printf("text: %v\n", text)
+	text += fmt.Sprintf("Conditions: %s", strings.Join(conditionsText, ", ")) + "\n"
+	//fmt.Printf("text: %v\n", text)
 	return text
 }
 
@@ -530,7 +537,7 @@ func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) 
 		fmt.Printf("%s takes %s damage! (%s/%s)\n", color.HiBlueString(opponent.Name), color.HiRedString("%d", int(attackDamage)), color.HiBlueString("%d", opponent.CurrentHealth), color.HiBlueString("%d", opponent.MaxHealth))
 		result += fmt.Sprintf("%s takes a %s damage", opponent.Name, getPercentileDefault(attackDamage, attack.MinDamage, attack.MaxDamage))
 	}
-	fmt.Printf("result: %v\n", result)
+	//fmt.Printf("result: %v\n", result)
 	return result
 
 	//Calculate effect from attacker conditions
@@ -773,7 +780,7 @@ func CreateFighter() *Fighter {
 		Name: "height",
 		Prompt: &survey.Input{
 			Message: "Enter fighter height (160-200 cm):",
-			Help:    "Please enter your fighter height. Taller fighters will favour Strength, Offense and Control, while lower height will give benefits to Agility, Defense and Speed.",
+			Help:    "Please enter your fighter height. Taller fighters will favour Strength, Offense and Control, while lower height will give benefits to Agility, Defense and Speed",
 			Default: "180",
 		},
 		Validate: validateNumber(minHeight, maxHeight),
@@ -784,10 +791,10 @@ func CreateFighter() *Fighter {
 		Name: "weight",
 		Prompt: &survey.Input{
 			Message: "Enter fighter weight (60-120 kg):",
-			Help:    "Please enter your fighter weight. Heavier fighters tend to have better Strength, Endurance and Control, while lighter fighters rely more on the Agility, Burst and Speed.",
+			Help:    "Please enter your fighter weight. Heavier fighters tend to have better Strength, Endurance and Defense, while lighter fighters rely more on the Agility, Burst and Offense",
 			Default: "90",
 		},
-		Validate: validateNumber(60, 120),
+		Validate: validateNumber(minWeight, maxWeight),
 	}
 	qs = append(qs, weightQuestion)
 
@@ -795,10 +802,10 @@ func CreateFighter() *Fighter {
 		Name: "age",
 		Prompt: &survey.Input{
 			Message: "Enter fighter age (18-60 years):",
-			Help:    "Please enter your fighter age. Older fighters tend to have better Intelligence, while younger fighters rely more on the Instinct.",
+			Help:    "Please enter your fighter age. Older fighters tend to have better Intelligence, Control and Endurance, while younger fighters rely more on the Instinct, Speed and Burst.",
 			Default: "40",
 		},
-		Validate: validateNumber(18, 60),
+		Validate: validateNumber(minAge, maxAge),
 	}
 	qs = append(qs, ageQuestion)
 
@@ -807,7 +814,7 @@ func CreateFighter() *Fighter {
 		Prompt: &survey.Select{
 			Message: "Choose fighter agility/strength balance:",
 			Options: []string{"Very high Agility, Very low Strength", "High Agility, Low Strength", "Balanced", "Low Agility, High Strength", "Very low Agility, Very high Strength"},
-			Help:    "This parameter determines the balance between Agility and Strength. High Agility will allow fighter to execute more complex attack with better chances to hit and block, while high Strength will increase damage and special effects chance.",
+			Help:    "This parameter determines the balance between Agility and Strength. High Agility will allow fighter to get better chances to hit and block, while high Strength will increase damage",
 			Default: "Balanced",
 		},
 	}
@@ -818,7 +825,7 @@ func CreateFighter() *Fighter {
 		Prompt: &survey.Select{
 			Message: "Choose fighter burst/endurance balance:",
 			Options: []string{"Very high Burst, Very low Endurance", "High Burst, Low Endurance", "Balanced", "Low Burst, High Endurance", "Very low Burst, Very high Endurance"},
-			Help:    "This parameter determines the balance between Burst and Endurance. Fighters with high Burst will get better chances to hit and special effects, but high Endurance will give bonuses to damage and blocking chance.",
+			Help:    "This parameter determines the balance between Burst and Endurance. Fighters with high Burst will get better chances to hit, but high Endurance will allow to execute complex attacks with higher special chance",
 			Default: "Balanced",
 		},
 	}
@@ -829,7 +836,7 @@ func CreateFighter() *Fighter {
 		Prompt: &survey.Select{
 			Message: "Choose fighter defense/offense balance:",
 			Options: []string{"Very high Defense, Very low Offense", "High Defense, Low Offense", "Balanced", "Low Defense, High Offense", "Very low Defense, Very high Offense"},
-			Help:    "This parameter determines the balance between Defense and Offense. Increasing Defense will improve your chances of blocking attacks, while increasing Offense will help with hitting.",
+			Help:    "This parameter determines the balance between Defense and Offense. Increasing Defense will improve your chances of blocking attacks, while increasing Offense will increase damage and chance to hit",
 			Default: "Balanced",
 		},
 	}
@@ -840,7 +847,7 @@ func CreateFighter() *Fighter {
 		Prompt: &survey.Select{
 			Message: "Choose fighter speed/control balance:",
 			Options: []string{"Very high Speed, Very low Control", "High Speed, Low Control", "Balanced", "Low Speed, High Control", "Very low Speed, Very high Control"},
-			Help:    "This parameter determines the balance between Speed and Control. Increasing Speed will improve your chances of successfully hitting and blocking attacks, while high Control will help with executing more complex attacks and critical hits",
+			Help:    "This parameter determines the balance between Speed and Control. Increasing Speed will improve your chances of perform complex attacks with better chance to hit, while high Control will increase chance of specials",
 			Default: "Balanced",
 		},
 	}
@@ -851,7 +858,7 @@ func CreateFighter() *Fighter {
 		Prompt: &survey.Select{
 			Message: "Choose fighter intelligence/instinct balance:",
 			Options: []string{"Very high Intelligence, Very low Instinct", "High Intelligence, Low Instinct", "Balanced", "Low Intelligence, High Instinct", "Very low Intelligence, Very high Instinct"},
-			Help:    "This parameter determines the balance between Intelligence and Instinct. Increasing Intelligence will help with executing more complex attacks and critical hits, while increasing Instinct will improve your chances of successfully hitting and blocking attacks",
+			Help:    "This parameter determines the balance between Intelligence and Instinct. Increasing Intelligence will help with executing more complex attacks, while increasing Instinct will improve your chances of successfully blocking attacks and execute specials",
 			Default: "Balanced",
 		},
 	}
@@ -894,29 +901,34 @@ func CreateFighter() *Fighter {
 	   		Help:     "Punch: Closed fist attacks, high damage, low complexity, high hit chance, high block chance\nSlap: Open fist or back hand attacks, very low damage, low complexity, high hit chance, high block chance\nKick: Leg attacks, high damage, average complexity, high hit chance, high block chance\nKnee strike: Attacks with a knee, very high damage, average complexity, high hit chance, average block chance\nElbow strike: Attacks with an elbow, very high damage, low complexity, high hit chance, high block chance\nThrow: Attacks to knockdown opponent, average damage, average complexity, average hit chance, average block chance, can knockdown opponent\nLock: Grapple attacks to block joint movement, very low damage, high complexity, low hit chance, low block chance, decrease opponent's hit and block chances\nChoke: Grapple attacks to block airways, low damage, high complexity, low hit chance, low block chance, decrease opponent's damage and increase complexity\nCustom: Custom free text attack",
 	   	} */
 
+	//Calculate bonuses from Age, Weight and Height, i.e. normalize the value across [-2;+2] scale
+	ageBonus := float64((answers.Age-minAge)/(maxAge-minAge)*4 - 2)
+	weightBonus := float64((answers.Weight-minWeight)/(maxWeight-minWeight)*4 - 2)
+	heightBonus := float64((answers.Height-minHeight)/(maxHeight-minHeight)*4 - 2)
+
 	// Create the fighter object
 	fighter := &Fighter{
 		Name:                        answers.Name,
 		Height:                      answers.Height,
 		Weight:                      answers.Weight,
 		Age:                         answers.Age,
-		AgilityStrengthBalance:      float64(answers.AgilityStrengthBalance) + (float64(answers.Weight)-90)/15 + (float64(answers.Height)-180)/10 - 2,
-		BurstEnduranceBalance:       float64(answers.BurstEnduranceBalance) + (float64(answers.Weight)-90)/15 - 2,
-		DefenseOffenseBalance:       float64(answers.DefenseOffenseBalance) + (float64(answers.Height)-180)/10 - 2,
-		SpeedControlBalance:         float64(answers.SpeedControlBalance) + (float64(answers.Weight)-90)/15 + (float64(answers.Height)-180)/10 - 2,
-		IntelligenceInstinctBalance: float64(answers.IntelligenceInstinctBalance) - (float64(answers.Age)-39)/10 - 2,
-		CurrentHealth:               250 + (answers.Weight - 90),
-		MaxHealth:                   250 + (answers.Weight - 90),
+		AgilityStrengthBalance:      float64(answers.AgilityStrengthBalance) - 2 + 2*weightBonus + heightBonus,
+		BurstEnduranceBalance:       float64(answers.BurstEnduranceBalance) - 2 + 2*weightBonus + ageBonus,
+		DefenseOffenseBalance:       float64(answers.DefenseOffenseBalance) - 2 + 2*heightBonus - weightBonus,
+		SpeedControlBalance:         float64(answers.SpeedControlBalance) - 2 + 2*heightBonus + ageBonus,
+		IntelligenceInstinctBalance: float64(answers.IntelligenceInstinctBalance) - 2 - 3*ageBonus,
+		CurrentHealth:               250 + (answers.Weight - (maxWeight+minWeight)/2),
+		MaxHealth:                   250 + (answers.Weight - (maxWeight+minWeight)/2),
 		Conditions:                  make(map[modifiers.Condition]int),
 	}
 	fmt.Printf("fighter: %v\n", fighter.String())
 
-	fighter.DamageBonus = (fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance) * 10
-	fighter.ComplexityBonus = (fighter.AgilityStrengthBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance) * 5
-	fighter.HitChanceBonus = (-fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance + fighter.DefenseOffenseBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance) * 3
-	fighter.BlockChanceBonus = (-fighter.AgilityStrengthBalance + fighter.BurstEnduranceBalance - fighter.DefenseOffenseBalance - fighter.SpeedControlBalance + fighter.IntelligenceInstinctBalance) * 3
-	fighter.CriticalChanceBonus = (fighter.SpeedControlBalance - fighter.IntelligenceInstinctBalance) * 10
-	fighter.SpecialChanceBonus = (fighter.AgilityStrengthBalance - fighter.BurstEnduranceBalance) * 10
+	fighter.DamageBonus = (2*fighter.AgilityStrengthBalance + fighter.DefenseOffenseBalance - fighter.SpeedControlBalance) * 5
+	fighter.ComplexityBonus = -(fighter.BurstEnduranceBalance - fighter.SpeedControlBalance - 2*fighter.IntelligenceInstinctBalance) * 5
+	fighter.HitChanceBonus = (fighter.DefenseOffenseBalance - 2*fighter.BurstEnduranceBalance - fighter.AgilityStrengthBalance) * 5
+	fighter.BlockChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.DefenseOffenseBalance - fighter.AgilityStrengthBalance) * 5
+	fighter.CriticalChanceBonus = (fighter.IntelligenceInstinctBalance + 2*fighter.SpeedControlBalance + fighter.BurstEnduranceBalance) * 5
+	fighter.SpecialChanceBonus = (fighter.IntelligenceInstinctBalance + 2*fighter.SpeedControlBalance + fighter.BurstEnduranceBalance) * 5
 
 	/* 	defaultAttacks := attack.NewDefaultAttacks()
 	   	attacks := []*attack.Attack{}
@@ -975,55 +987,57 @@ func CreateFighter() *Fighter {
 	   		}
 	*/
 
-	answer := true
-	prompt := &survey.Confirm{
-		Message: "Do you want to add custom combos to the fighter?",
-	}
-	survey.AskOne(prompt, &answer)
-	for answer {
+	/*
 
-		// Ask for the description of the custom attack
-		customAttackName := ""
-		customAttackPrompt := &survey.Input{
-			Message: "Enter the description for the custom attack:",
-		}
-		err = survey.AskOne(customAttackPrompt, &customAttackName)
-		fmt.Println("customAttackName=" + customAttackName)
-		if err != nil {
-			fmt.Println("Error during the custom attack creation:", err)
-			break
-		}
-
-		// Validate the attack name and get the attack parameters using OpenAI API
-		validAttack, err := validateAttackName(customAttackName)
-		if err != nil {
-			fmt.Printf("Error validating attack name: %s\n", err)
-			continue
-		}
-
-		if validAttack {
-			fmt.Println("Valid attack")
-			customAttackType, err := GetOpenAIResponse("COG_TYPE_ATTACK_PROMPT", customAttackName, "", "", "string")
-			if err != nil {
-				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
-				continue
-			}
-			fmt.Println("customAttackType=", customAttackType.(string))
-
-			complexityValue, err := GetOpenAIResponse("COG_COMPLEXITY_ATTACK_PROMPT", customAttackName, "", "", "int")
-			if err != nil {
-				fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
-				continue
-			}
-			fmt.Println("complexityValue=", complexityValue.(int))
-		}
-		//fighter.CustomAttacks = append(fighter.CustomAttacks, attacks...)
+		answer := true
 		prompt := &survey.Confirm{
-			Message: "Do you want to add more custom combos to the fighter?",
+			Message: "Do you want to add custom combos to the fighter?",
 		}
 		survey.AskOne(prompt, &answer)
-	}
+		for answer {
 
+			// Ask for the description of the custom attack
+			customAttackName := ""
+			customAttackPrompt := &survey.Input{
+				Message: "Enter the description for the custom attack:",
+			}
+			err = survey.AskOne(customAttackPrompt, &customAttackName)
+			fmt.Println("customAttackName=" + customAttackName)
+			if err != nil {
+				fmt.Println("Error during the custom attack creation:", err)
+				break
+			}
+
+			// Validate the attack name and get the attack parameters using OpenAI API
+			validAttack, err := validateAttackName(customAttackName)
+			if err != nil {
+				fmt.Printf("Error validating attack name: %s\n", err)
+				continue
+			}
+
+			if validAttack {
+				fmt.Println("Valid attack")
+				customAttackType, err := GetOpenAIResponse("COG_TYPE_ATTACK_PROMPT", customAttackName, "", "", "string")
+				if err != nil {
+					fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
+					continue
+				}
+				fmt.Println("customAttackType=", customAttackType.(string))
+
+				complexityValue, err := GetOpenAIResponse("COG_COMPLEXITY_ATTACK_PROMPT", customAttackName, "", "", "int")
+				if err != nil {
+					fmt.Printf("Error getting data for COG_COMPLEXITY_ATTACK_PROMPT: %s\n", err)
+					continue
+				}
+				fmt.Println("complexityValue=", complexityValue.(int))
+			}
+			//fighter.CustomAttacks = append(fighter.CustomAttacks, attacks...)
+			prompt := &survey.Confirm{
+				Message: "Do you want to add more custom combos to the fighter?",
+			}
+			survey.AskOne(prompt, &answer)
+		}
+	*/
 	// Create the fighter attacks
 
 	//fmt.Printf("fighter.Attacks= %v\n", fighter.Attacks)
@@ -1048,18 +1062,40 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 		SpeedControlBalance         int
 		IntelligenceInstinctBalance int
 	}{}
+
+	// Generate random values for the computer fighter's attributes
 	answers.AgilityStrengthBalance = rand.Intn(5)
 	answers.BurstEnduranceBalance = rand.Intn(5)
 	answers.DefenseOffenseBalance = rand.Intn(5)
 	answers.SpeedControlBalance = rand.Intn(5)
 	answers.IntelligenceInstinctBalance = rand.Intn(5)
 
-	answers.Height = rand.Intn(41) + 160 // Height between 160 and 200 cm
-	answers.Weight = rand.Intn(61) + 60  // Weight between 60 and 120 kg
-	answers.Age = rand.Intn(43) + 18     // Age between 18 and 60 years
+	answers.Height = rand.Intn(maxHeight-minHeight+1) + minHeight // Height between 160 and 200 cm
+	answers.Weight = rand.Intn(maxWeight-minWeight+1) + minWeight // Weight between 60 and 120 kg
+	answers.Age = rand.Intn(maxAge-minAge+1) + minAge             // Age between 18 and 60 years
 
-	// Generate random values for the computer fighter's attributes
+	//Calculate bonuses from Age, Weight and Height, i.e. normalize the value across [-2;+2] scale
+	ageBonus := float64((answers.Age-minAge)/(maxAge-minAge)*4 - 2)
+	weightBonus := float64((answers.Weight-minWeight)/(maxWeight-minWeight)*4 - 2)
+	heightBonus := float64((answers.Height-minHeight)/(maxHeight-minHeight)*4 - 2)
+
+	// Create the fighter object
 	computerFighter := &Fighter{
+		Name:                        fighterNames[rand.Intn(len(fighterNames))],
+		Height:                      answers.Height,
+		Weight:                      answers.Weight,
+		Age:                         answers.Age,
+		AgilityStrengthBalance:      float64(answers.AgilityStrengthBalance) - 2 + 2*weightBonus + heightBonus,
+		BurstEnduranceBalance:       float64(answers.BurstEnduranceBalance) - 2 + 2*weightBonus + ageBonus,
+		DefenseOffenseBalance:       float64(answers.DefenseOffenseBalance) - 2 + 2*heightBonus - weightBonus,
+		SpeedControlBalance:         float64(answers.SpeedControlBalance) - 2 + 2*heightBonus + ageBonus,
+		IntelligenceInstinctBalance: float64(answers.IntelligenceInstinctBalance) - 2 - 3*ageBonus,
+		CurrentHealth:               250 + (answers.Weight - (maxWeight+minWeight)/2),
+		MaxHealth:                   250 + (answers.Weight - (maxWeight+minWeight)/2),
+		Conditions:                  make(map[modifiers.Condition]int),
+	}
+
+	/* 	computerFighter := &Fighter{
 		Name:                        fighterNames[rand.Intn(len(fighterNames))],
 		Height:                      answers.Height,
 		Weight:                      answers.Weight,
@@ -1073,14 +1109,21 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 		CurrentHealth: 250 + (answers.Weight - 90),
 		MaxHealth:     250 + (answers.Weight - 90),
 		Conditions:    make(map[modifiers.Condition]int),
-	}
+	} */
 
-	computerFighter.DamageBonus = (computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance) * 10
+/* 	computerFighter.DamageBonus = (computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance) * 10
 	computerFighter.ComplexityBonus = (computerFighter.AgilityStrengthBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 5
 	computerFighter.HitChanceBonus = (-computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance + computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 3
 	computerFighter.BlockChanceBonus = (-computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 3
 	computerFighter.CriticalChanceBonus = (computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance) * 10
-	computerFighter.SpecialChanceBonus = (computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance) * 10
+	computerFighter.SpecialChanceBonus = (computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance) * 10 */
+
+	computerFighter.DamageBonus = (2*computerFighter.AgilityStrengthBalance + computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance) * 5
+	computerFighter.ComplexityBonus = -(computerFighter.BurstEnduranceBalance - computerFighter.SpeedControlBalance - 2*computerFighter.IntelligenceInstinctBalance) * 5
+	computerFighter.HitChanceBonus = (computerFighter.DefenseOffenseBalance - 2*computerFighter.BurstEnduranceBalance - computerFighter.AgilityStrengthBalance) * 5
+	computerFighter.BlockChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.DefenseOffenseBalance - computerFighter.AgilityStrengthBalance) * 5
+	computerFighter.CriticalChanceBonus = (computerFighter.IntelligenceInstinctBalance + 2*computerFighter.SpeedControlBalance + computerFighter.BurstEnduranceBalance) * 5
+	computerFighter.SpecialChanceBonus = (computerFighter.IntelligenceInstinctBalance + 2*computerFighter.SpeedControlBalance + computerFighter.BurstEnduranceBalance) * 5
 
 	/* defaultAttacks := attack.NewDefaultAttacks()
 	for range playerFighter.Attacks {
@@ -1093,10 +1136,10 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 	} */
 
 	fmt.Printf("\n%s has been generated!\n", computerFighter.Name)
-	//computerFighter.DisplayFighter()
-	return computerFighter
+	fmt.Println(computerFighter.String())
 }
 
+/*
 // validateAttackName validates the given attack name using OpenAI API and returns the attack parameters
 func validateAttackName(attackName string) (bool, error) {
 
@@ -1116,9 +1159,10 @@ func validateAttackName(attackName string) (bool, error) {
 
 	return false, fmt.Errorf("Unknown response from OpenAI API: %s", reply)
 }
+*/
 
 // Get answer from OpenAI API Proxy
-func GetOpenAIResponse(promptEnvVariable string, promptData1 string, promptData2 string, promptData3 string, responseType string) (interface{}, error) {
+func GetOpenAIResponse(promptEnvVariable string, chatMessages []ChatMessage, responseType string) (interface{}, error) {
 	//fmt.Printf("promptEnvVariable: %v\n", promptEnvVariable)
 	proxyURL := os.Getenv("OPENAI_PROXY_URL")
 	if proxyURL == "" {
@@ -1127,9 +1171,7 @@ func GetOpenAIResponse(promptEnvVariable string, promptData1 string, promptData2
 
 	data := proxyRequestData{
 		PromptTemplate: promptEnvVariable,
-		PromptData1:    promptData1,
-		PromptData2:    promptData2,
-		PromptData3:    promptData3,
+		Messages:       chatMessages,
 		ResponseType:   responseType,
 	}
 
