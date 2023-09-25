@@ -45,7 +45,7 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 	var chatMessages []fighter.ChatMessage = []fighter.ChatMessage{{Role: "user", Content: situation}}
 	comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", chatMessages, "full")
 	if err != nil {
-		fmt.Println("Can't get OpenAI response")
+		fmt.Printf("Can't get OpenAI response:\n%v\n", err)
 		return nil
 	}
 	stopChan <- true
@@ -145,7 +145,7 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 		// fmt.Printf("situation: %v\n", situation)
 		comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", chatMessages, "full")
 		if err != nil {
-			fmt.Println("Can't get OpenAI response")
+			fmt.Printf("Can't get OpenAI response:\n%v\n", err)
 			return nil
 		}
 		stopChan <- true

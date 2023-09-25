@@ -98,7 +98,6 @@ type Fighter struct {
 	ComplexityBonus             float64
 	HitChanceBonus              float64
 	BlockChanceBonus            float64
-	CriticalChanceBonus         float64
 	SpecialChanceBonus          float64
 	TempDamageBonus             float64
 	TempComplexityBonus         float64
@@ -402,14 +401,13 @@ func (f *Fighter) RemoveCondition(opponent *Fighter, condition modifiers.Conditi
 
 func (f *Fighter) ApplyAttack(opponent *Fighter, originalAttack *attack.Attack) string {
 	modifiedAttack := &attack.Attack{
-		Name:           originalAttack.Name,
-		Type:           originalAttack.Type,
-		Damage:         originalAttack.Damage * (1 + (f.DamageBonus+f.TempDamageBonus)/100),
-		Complexity:     originalAttack.Complexity + f.ComplexityBonus + f.TempComplexityBonus,
-		HitChance:      originalAttack.HitChance + f.HitChanceBonus + f.TempHitChanceBonus,
-		BlockChance:    originalAttack.BlockChance + opponent.BlockChanceBonus + opponent.TempBlockChanceBonus,
-		CriticalChance: originalAttack.CriticalChance + f.CriticalChanceBonus,
-		SpecialChance:  originalAttack.SpecialChance + f.SpecialChanceBonus + f.TempSpecialChanceBonus,
+		Name:          originalAttack.Name,
+		Type:          originalAttack.Type,
+		Damage:        originalAttack.Damage * (1 + (f.DamageBonus+f.TempDamageBonus)/100),
+		Complexity:    originalAttack.Complexity + f.ComplexityBonus + f.TempComplexityBonus,
+		HitChance:     originalAttack.HitChance + f.HitChanceBonus + f.TempHitChanceBonus,
+		BlockChance:   originalAttack.BlockChance + opponent.BlockChanceBonus + opponent.TempBlockChanceBonus,
+		SpecialChance: originalAttack.SpecialChance + f.SpecialChanceBonus + f.TempSpecialChanceBonus,
 	}
 
 	sureStrike := 0
@@ -778,9 +776,9 @@ func CreateFighter() *Fighter {
 	heightQuestion := &survey.Question{
 		Name: "height",
 		Prompt: &survey.Input{
-			Message: "Enter fighter height (160-200 cm):",
-			Help:    "Please enter your fighter height. Taller fighters will favour Strength, Offense and Control, while lower height will give benefits to Agility, Defense and Speed",
-			Default: "180",
+			Message: fmt.Sprintf("Enter fighter height (%d-%d cm):", minHeight, maxHeight),
+			Help:    "Please enter your fighter height. Taller fighters will have bonus to hit chance, while lower height will give make it easier to execute complex attacks",
+			Default: fmt.Sprintf("%d", (minHeight+maxHeight)/2),
 		},
 		Validate: validateNumber(minHeight, maxHeight),
 	}
@@ -789,9 +787,9 @@ func CreateFighter() *Fighter {
 	weightQuestion := &survey.Question{
 		Name: "weight",
 		Prompt: &survey.Input{
-			Message: "Enter fighter weight (60-120 kg):",
-			Help:    "Please enter your fighter weight. Heavier fighters tend to have better Strength, Endurance and Defense, while lighter fighters rely more on the Agility, Burst and Offense",
-			Default: "90",
+			Message: fmt.Sprintf("Enter fighter weight (%d-%d kg):", minWeight, maxWeight),
+			Help:    "Please enter your fighter weight. Heavier fighters tend to have increased damage, while lighter fighters will have better hit chance",
+			Default: fmt.Sprintf("%d", (minWeight+maxWeight)/2),
 		},
 		Validate: validateNumber(minWeight, maxWeight),
 	}
@@ -800,9 +798,9 @@ func CreateFighter() *Fighter {
 	ageQuestion := &survey.Question{
 		Name: "age",
 		Prompt: &survey.Input{
-			Message: "Enter fighter age (18-60 years):",
-			Help:    "Please enter your fighter age. Older fighters tend to have better Intelligence, Control and Endurance, while younger fighters rely more on the Instinct, Speed and Burst.",
-			Default: "40",
+			Message: fmt.Sprintf("Enter fighter age (%d-%d years):", minAge, maxAge),
+			Help:    "Please enter your fighter age. Older fighters tend to have better chance to execute complex attacks, while younger fighters will have better damage",
+			Default: fmt.Sprintf("%d", (minAge+maxAge)/2),
 		},
 		Validate: validateNumber(minAge, maxAge),
 	}
@@ -901,35 +899,41 @@ func CreateFighter() *Fighter {
 	   	} */
 
 	//Calculate bonuses from Age, Weight and Height, i.e. normalize the value across [-2;+2] scale
-	ageBonus := float64(answers.Age-minAge)/(maxAge-minAge)*4 - 2
-	weightBonus := float64(answers.Weight-minWeight)/(maxWeight-minWeight)*4 - 2
-	heightBonus := float64(answers.Height-minHeight)/(maxHeight-minHeight)*4 - 2
+	ageBonus := float64(answers.Age-minAge)/(maxAge-minAge)*2 - 1
+	weightBonus := float64(answers.Weight-minWeight)/(maxWeight-minWeight)*2 - 1
+	heightBonus := float64(answers.Height-minHeight)/(maxHeight-minHeight)*2 - 1
 
 	// Create the fighter object
 	fighter := &Fighter{
-		Name:                        answers.Name,
-		Height:                      answers.Height,
-		Weight:                      answers.Weight,
-		Age:                         answers.Age,
-		AgilityStrengthBalance:      float64(answers.AgilityStrengthBalance) - 2 + 2*weightBonus + heightBonus,
-		BurstEnduranceBalance:       float64(answers.BurstEnduranceBalance) - 2 + 2*weightBonus + ageBonus,
-		DefenseOffenseBalance:       float64(answers.DefenseOffenseBalance) - 2 + 2*heightBonus - weightBonus,
-		SpeedControlBalance:         float64(answers.SpeedControlBalance) - 2 + 2*heightBonus + ageBonus,
-		IntelligenceInstinctBalance: float64(answers.IntelligenceInstinctBalance) - 2 - 3*ageBonus,
-		CurrentHealth:               250 + (answers.Weight - (maxWeight+minWeight)/2),
-		MaxHealth:                   250 + (answers.Weight - (maxWeight+minWeight)/2),
-		Conditions:                  make(map[modifiers.Condition]int),
+		Name:   answers.Name,
+		Height: answers.Height,
+		Weight: answers.Weight,
+		Age:    answers.Age,
+		// AgilityStrengthBalance:      float64(answers.AgilityStrengthBalance) - 2 + 2*weightBonus + heightBonus,
+		// BurstEnduranceBalance:       float64(answers.BurstEnduranceBalance) - 2 + 2*weightBonus + ageBonus,
+		// DefenseOffenseBalance:       float64(answers.DefenseOffenseBalance) - 2 + 2*heightBonus - weightBonus,
+		// SpeedControlBalance:         float64(answers.SpeedControlBalance) - 2 + 2*heightBonus + ageBonus,
+		// IntelligenceInstinctBalance: float64(answers.IntelligenceInstinctBalance) - 2 - 3*ageBonus,
+		AgilityStrengthBalance:      float64(answers.AgilityStrengthBalance) - 2,
+		BurstEnduranceBalance:       float64(answers.BurstEnduranceBalance) - 2,
+		DefenseOffenseBalance:       float64(answers.DefenseOffenseBalance) - 2,
+		SpeedControlBalance:         float64(answers.SpeedControlBalance) - 2,
+		IntelligenceInstinctBalance: float64(answers.IntelligenceInstinctBalance) - 2,
+
+		CurrentHealth: 250 + (answers.Weight - (maxWeight+minWeight)/2),
+		MaxHealth:     250 + (answers.Weight - (maxWeight+minWeight)/2),
+		Conditions:    make(map[modifiers.Condition]int),
 	}
 	fmt.Printf("fighter: %v\n", fighter.String())
 	fmt.Printf("ageBonus: %v\n", ageBonus)
-	fmt.Printf("answers.IntelligenceInstinctBalance: %v\n", answers.IntelligenceInstinctBalance)
-	fmt.Printf("fighter.IntelligenceInstinctBalance: %v\n", fighter.IntelligenceInstinctBalance)
+	fmt.Printf("weightBonus: %v\n", weightBonus)
+	fmt.Printf("heightBonus: %v\n", heightBonus)
 
-	fighter.DamageBonus = (2*fighter.AgilityStrengthBalance + fighter.DefenseOffenseBalance + fighter.SpeedControlBalance) * 2
-	fighter.ComplexityBonus = (fighter.BurstEnduranceBalance - fighter.SpeedControlBalance + 2*fighter.IntelligenceInstinctBalance) * 2
-	fighter.HitChanceBonus = (fighter.DefenseOffenseBalance + 2*fighter.BurstEnduranceBalance - fighter.AgilityStrengthBalance) * 2
-	fighter.BlockChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.DefenseOffenseBalance - fighter.AgilityStrengthBalance) * 2
-	fighter.CriticalChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.SpeedControlBalance - fighter.BurstEnduranceBalance) * 2
+	//Min is -48%, max is +48%
+	fighter.DamageBonus = (2*fighter.AgilityStrengthBalance + fighter.DefenseOffenseBalance + fighter.SpeedControlBalance + weightBonus - ageBonus) * 4
+	fighter.ComplexityBonus = (fighter.BurstEnduranceBalance - fighter.SpeedControlBalance + 2*fighter.IntelligenceInstinctBalance + heightBonus - ageBonus) * 4
+	fighter.HitChanceBonus = (fighter.DefenseOffenseBalance + 2*fighter.BurstEnduranceBalance - fighter.AgilityStrengthBalance - weightBonus + heightBonus) * 4
+	fighter.BlockChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.DefenseOffenseBalance - fighter.AgilityStrengthBalance) * 6
 	fighter.SpecialChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.SpeedControlBalance - fighter.BurstEnduranceBalance) * 2
 
 	/* 	defaultAttacks := attack.NewDefaultAttacks()
@@ -1077,9 +1081,9 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 	answers.Age = rand.Intn(maxAge-minAge+1) + minAge             // Age between 18 and 60 years
 
 	//Calculate bonuses from Age, Weight and Height, i.e. normalize the value across [-2;+2] scale
-	ageBonus := float64((answers.Age-minAge)/(maxAge-minAge)*4 - 2)
-	weightBonus := float64((answers.Weight-minWeight)/(maxWeight-minWeight)*4 - 2)
-	heightBonus := float64((answers.Height-minHeight)/(maxHeight-minHeight)*4 - 2)
+	ageBonus := float64((answers.Age-minAge)/(maxAge-minAge)*2 - 1)
+	weightBonus := float64((answers.Weight-minWeight)/(maxWeight-minWeight)*2 - 1)
+	heightBonus := float64((answers.Height-minHeight)/(maxHeight-minHeight)*2 - 1)
 
 	// Create the fighter object
 	computerFighter := &Fighter{
@@ -1087,45 +1091,21 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 		Height:                      answers.Height,
 		Weight:                      answers.Weight,
 		Age:                         answers.Age,
-		AgilityStrengthBalance:      float64(answers.AgilityStrengthBalance) - 2 + 2*weightBonus + heightBonus,
-		BurstEnduranceBalance:       float64(answers.BurstEnduranceBalance) - 2 + 2*weightBonus + ageBonus,
-		DefenseOffenseBalance:       float64(answers.DefenseOffenseBalance) - 2 + 2*heightBonus - weightBonus,
-		SpeedControlBalance:         float64(answers.SpeedControlBalance) - 2 + 2*heightBonus + ageBonus,
-		IntelligenceInstinctBalance: float64(answers.IntelligenceInstinctBalance) - 2 - 3*ageBonus,
+		AgilityStrengthBalance:      float64(answers.AgilityStrengthBalance) - 2,
+		BurstEnduranceBalance:       float64(answers.BurstEnduranceBalance) - 2,
+		DefenseOffenseBalance:       float64(answers.DefenseOffenseBalance) - 2,
+		SpeedControlBalance:         float64(answers.SpeedControlBalance) - 2,
+		IntelligenceInstinctBalance: float64(answers.IntelligenceInstinctBalance) - 2,
 		CurrentHealth:               250 + (answers.Weight - (maxWeight+minWeight)/2),
 		MaxHealth:                   250 + (answers.Weight - (maxWeight+minWeight)/2),
 		Conditions:                  make(map[modifiers.Condition]int),
 	}
 
-	/* 	computerFighter := &Fighter{
-		Name:                        fighterNames[rand.Intn(len(fighterNames))],
-		Height:                      answers.Height,
-		Weight:                      answers.Weight,
-		Age:                         answers.Age,
-		AgilityStrengthBalance:      float64(answers.AgilityStrengthBalance) + (float64(answers.Weight)-90)/15 + (float64(answers.Height)-180)/10 - 2,
-		BurstEnduranceBalance:       float64(answers.BurstEnduranceBalance) + (float64(answers.Weight)-90)/15 - 2,
-		DefenseOffenseBalance:       float64(answers.DefenseOffenseBalance) + (float64(answers.Height)-180)/10 - 2,
-		SpeedControlBalance:         float64(answers.SpeedControlBalance) + (float64(answers.Weight)-90)/15 + (float64(answers.Height)-180)/10 - 2,
-		IntelligenceInstinctBalance: float64(answers.IntelligenceInstinctBalance) - (float64(answers.Age)-39)/10 - 2,
-		//		Attacks:                     []*attack.Attack{},
-		CurrentHealth: 250 + (answers.Weight - 90),
-		MaxHealth:     250 + (answers.Weight - 90),
-		Conditions:    make(map[modifiers.Condition]int),
-	} */
-
-	/* 	computerFighter.DamageBonus = (computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance) * 10
-	   	computerFighter.ComplexityBonus = (computerFighter.AgilityStrengthBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 5
-	   	computerFighter.HitChanceBonus = (-computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance + computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 3
-	   	computerFighter.BlockChanceBonus = (-computerFighter.AgilityStrengthBalance + computerFighter.BurstEnduranceBalance - computerFighter.DefenseOffenseBalance - computerFighter.SpeedControlBalance + computerFighter.IntelligenceInstinctBalance) * 3
-	   	computerFighter.CriticalChanceBonus = (computerFighter.SpeedControlBalance - computerFighter.IntelligenceInstinctBalance) * 10
-	   	computerFighter.SpecialChanceBonus = (computerFighter.AgilityStrengthBalance - computerFighter.BurstEnduranceBalance) * 10 */
-
-	computerFighter.DamageBonus = (2*computerFighter.AgilityStrengthBalance + computerFighter.DefenseOffenseBalance + computerFighter.SpeedControlBalance) * 2
-	computerFighter.ComplexityBonus = (computerFighter.BurstEnduranceBalance - computerFighter.SpeedControlBalance + 2*computerFighter.IntelligenceInstinctBalance) * 2
-	computerFighter.HitChanceBonus = (computerFighter.DefenseOffenseBalance - computerFighter.BurstEnduranceBalance - computerFighter.AgilityStrengthBalance) * 2
-	computerFighter.BlockChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.DefenseOffenseBalance - computerFighter.AgilityStrengthBalance) * 2
-	computerFighter.CriticalChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.SpeedControlBalance + 2*computerFighter.BurstEnduranceBalance) * 2
-	computerFighter.SpecialChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.SpeedControlBalance + 2*computerFighter.BurstEnduranceBalance) * 2
+	computerFighter.DamageBonus = (2*computerFighter.AgilityStrengthBalance + computerFighter.DefenseOffenseBalance + computerFighter.SpeedControlBalance + weightBonus - ageBonus) * 4
+	computerFighter.ComplexityBonus = (computerFighter.BurstEnduranceBalance - computerFighter.SpeedControlBalance + 2*computerFighter.IntelligenceInstinctBalance + heightBonus - ageBonus) * 4
+	computerFighter.HitChanceBonus = (computerFighter.DefenseOffenseBalance - computerFighter.BurstEnduranceBalance - computerFighter.AgilityStrengthBalance - weightBonus + heightBonus) * 4
+	computerFighter.BlockChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.DefenseOffenseBalance - computerFighter.AgilityStrengthBalance) * 6
+	computerFighter.SpecialChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.SpeedControlBalance + 2*computerFighter.BurstEnduranceBalance) * 6
 
 	/* defaultAttacks := attack.NewDefaultAttacks()
 	for range playerFighter.Attacks {
@@ -1186,7 +1166,7 @@ func GetOpenAIResponse(promptEnvVariable string, chatMessages []ChatMessage, res
 	req.Header.SetMethod("POST")
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return nil, fmt.Errorf("Error marshaling JSON: %v", err)
+		return nil, fmt.Errorf("Error marshaling JSON: %v\nSource data: %v", err, data)
 	}
 
 	req.SetBody(jsonData)
@@ -1205,7 +1185,7 @@ func GetOpenAIResponse(promptEnvVariable string, chatMessages []ChatMessage, res
 	var proxyResponse proxyResponseData
 	err = json.Unmarshal(resp.Body(), &proxyResponse)
 	if err != nil {
-		return nil, fmt.Errorf("Error unmarshaling JSON: %v", err)
+		return nil, fmt.Errorf("Error unmarshaling JSON: %v\nOriginal JSON: %v", err, resp.Body())
 	}
 
 	switch responseType {

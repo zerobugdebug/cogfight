@@ -29,7 +29,8 @@ func main() {
 	log.Info("Let's start the fight!")
 	computerFighter := fighter.GenerateComputerFighter(playerFighter)
 	winner := game.Fight(playerFighter, computerFighter)
-
-	// Display the winner
-	log.Info("The winner is ", winner.Name)
+	if winner != nil {
+		// Display the winner
+		log.Info("The winner is ", winner.Name)
+	}
 }
