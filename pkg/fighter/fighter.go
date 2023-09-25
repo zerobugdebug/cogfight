@@ -824,7 +824,7 @@ func CreateFighter() *Fighter {
 		Prompt: &survey.Select{
 			Message: "Choose fighter burst/endurance balance:",
 			Options: []string{"Very high Burst, Very low Endurance", "High Burst, Low Endurance", "Balanced", "Low Burst, High Endurance", "Very low Burst, Very high Endurance"},
-			Help:    "This parameter determines the balance between Burst and Endurance. Fighters with high Burst will be able to execute complex attacks with better chances to hit, but high Endurance will increase chance of special",
+			Help:    "This parameter determines the balance between Burst and Endurance. Fighters with high Burst will be able to execute complex attacks with better chance of special attacks, but high Endurance will increase hit chance",
 			Default: "Balanced",
 		},
 	}
@@ -901,9 +901,9 @@ func CreateFighter() *Fighter {
 	   	} */
 
 	//Calculate bonuses from Age, Weight and Height, i.e. normalize the value across [-2;+2] scale
-	ageBonus := float64((answers.Age-minAge)/(maxAge-minAge)*4 - 2)
-	weightBonus := float64((answers.Weight-minWeight)/(maxWeight-minWeight)*4 - 2)
-	heightBonus := float64((answers.Height-minHeight)/(maxHeight-minHeight)*4 - 2)
+	ageBonus := float64(answers.Age-minAge)/(maxAge-minAge)*4 - 2
+	weightBonus := float64(answers.Weight-minWeight)/(maxWeight-minWeight)*4 - 2
+	heightBonus := float64(answers.Height-minHeight)/(maxHeight-minHeight)*4 - 2
 
 	// Create the fighter object
 	fighter := &Fighter{
@@ -921,13 +921,16 @@ func CreateFighter() *Fighter {
 		Conditions:                  make(map[modifiers.Condition]int),
 	}
 	fmt.Printf("fighter: %v\n", fighter.String())
+	fmt.Printf("ageBonus: %v\n", ageBonus)
+	fmt.Printf("answers.IntelligenceInstinctBalance: %v\n", answers.IntelligenceInstinctBalance)
+	fmt.Printf("fighter.IntelligenceInstinctBalance: %v\n", fighter.IntelligenceInstinctBalance)
 
 	fighter.DamageBonus = (2*fighter.AgilityStrengthBalance + fighter.DefenseOffenseBalance + fighter.SpeedControlBalance) * 2
 	fighter.ComplexityBonus = (fighter.BurstEnduranceBalance - fighter.SpeedControlBalance + 2*fighter.IntelligenceInstinctBalance) * 2
-	fighter.HitChanceBonus = (fighter.DefenseOffenseBalance - fighter.BurstEnduranceBalance - fighter.AgilityStrengthBalance) * 2
+	fighter.HitChanceBonus = (fighter.DefenseOffenseBalance + 2*fighter.BurstEnduranceBalance - fighter.AgilityStrengthBalance) * 2
 	fighter.BlockChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.DefenseOffenseBalance - fighter.AgilityStrengthBalance) * 2
-	fighter.CriticalChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.SpeedControlBalance + 2*fighter.BurstEnduranceBalance) * 2
-	fighter.SpecialChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.SpeedControlBalance + 2*fighter.BurstEnduranceBalance) * 2
+	fighter.CriticalChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.SpeedControlBalance - fighter.BurstEnduranceBalance) * 2
+	fighter.SpecialChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.SpeedControlBalance - fighter.BurstEnduranceBalance) * 2
 
 	/* 	defaultAttacks := attack.NewDefaultAttacks()
 	   	attacks := []*attack.Attack{}
