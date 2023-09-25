@@ -59,7 +59,7 @@ var DefaultConditionAttributes = map[Condition]map[Modifier]int{
 	Paralysed: {
 		SureStrike: 1,
 		SkipTurn:   1,
-		Duration:   1,
+		Duration:   2,
 	},
 	Insulted: {
 		OpponentHitChance:   20,
