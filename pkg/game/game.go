@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"time"
 
-	//"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 
 	"github.com/zerobugdebug/cogfight/pkg/attack"
