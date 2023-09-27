@@ -12,7 +12,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
-	"github.com/valyala/fasthttp"
+	"github.com/gorilla/websocket"
 
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
@@ -1148,9 +1148,10 @@ func validateAttackName(attackName string) (bool, error) {
 // Get answer from OpenAI API Proxy
 func GetOpenAIResponse(promptEnvVariable string, chatMessages []ChatMessage, responseType string) (interface{}, error) {
 	//fmt.Printf("promptEnvVariable: %v\n", promptEnvVariable)
-	proxyURL := os.Getenv("OPENAI_PROXY_URL")
+	result := ""
+	proxyURL := os.Getenv("OPENAI_WSPROXY_URL")
 	if proxyURL == "" {
-		return nil, fmt.Errorf("OpenAI proxy URL not found in environment variable OPENAI_PROXY_URL")
+		return nil, fmt.Errorf("OpenAI websocket proxy URL not found in environment variable OPENAI_WSPROXY_URL")
 	}
 
 	data := proxyRequestData{
@@ -1159,51 +1160,72 @@ func GetOpenAIResponse(promptEnvVariable string, chatMessages []ChatMessage, res
 		ResponseType:   responseType,
 	}
 
-	req := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(req)
-	req.SetRequestURI(proxyURL)
-	req.Header.SetContentType("application/json")
-	req.Header.SetMethod("POST")
+	conn, _, err := websocket.DefaultDialer.Dial(proxyURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error connecting to Websocket Server: %v\nProxy Url: %s", err, proxyURL)
+	}
+	defer conn.Close()
+
+	/* 	req := fasthttp.AcquireRequest()
+	   	defer fasthttp.ReleaseRequest(req)
+	   	req.SetRequestURI(proxyURL)
+	   	req.Header.SetContentType("application/json")
+	   	req.Header.SetMethod("POST") */
+
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, fmt.Errorf("Error marshaling JSON: %v\nSource data: %v", err, data)
 	}
 
-	req.SetBody(jsonData)
-	//fmt.Printf("req: %v\n", req)
-	resp := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseResponse(resp)
-
-	client := &fasthttp.Client{}
-	err = client.Do(req, resp)
-	if err != nil {
-		return nil, fmt.Errorf("Request failed: %v", err)
+	conn.WriteMessage(websocket.TextMessage, jsonData)
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			return nil, fmt.Errorf("Error marshaling JSON: %v\nSource data: %v", err, data)
+		}
+		if string(msg) != "<END>" {
+			fmt.Print(string(msg))
+			result += string(msg)
+		} else {
+			return result, nil
+		}
 	}
+
+	/* 	req.SetBody(jsonData)
+	   	//fmt.Printf("req: %v\n", req)
+	   	resp := fasthttp.AcquireResponse()
+	   	defer fasthttp.ReleaseResponse(resp)
+
+	   	client := &fasthttp.Client{}
+	   	err = client.Do(req, resp)
+	   	if err != nil {
+	   		return nil, fmt.Errorf("Request failed: %v", err)
+	   	} */
 
 	//fmt.Println("Response status:", resp.StatusCode())
 	//fmt.Println("Response body:", string(resp.Body()))
-	var proxyResponse proxyResponseData
-	err = json.Unmarshal(resp.Body(), &proxyResponse)
-	if err != nil {
-		return nil, fmt.Errorf("Error unmarshaling JSON: %v\nOriginal JSON: %v", err, resp.Body())
-	}
+	/* 	var proxyResponse proxyResponseData
+	   	err := json.Unmarshal(resp.Body(), &proxyResponse)
+	   	if err != nil {
+	   		return nil, fmt.Errorf("Error unmarshaling JSON: %v\nOriginal JSON: %v", err, resp.Body())
+	   	} */
 
-	switch responseType {
-	case "int":
-		{
-			return proxyResponse.Int, nil
-		}
-	case "string":
-		{
-			return proxyResponse.String, nil
-		}
-	case "full":
-		{
-			return proxyResponse.Full, nil
-		}
-	default:
-		return nil, fmt.Errorf("Error parsing response")
-	}
+	/* 	switch responseType {
+	   	case "int":
+	   		{
+	   			return proxyResponse.Int, nil
+	   		}
+	   	case "string":
+	   		{
+	   			return proxyResponse.String, nil
+	   		}
+	   	case "full":
+	   		{
+	   			return proxyResponse.Full, nil
+	   		}
+	   	default:
+	   		return nil, fmt.Errorf("Error parsing response")
+	   	} */
 
 }
 

@@ -3,8 +3,6 @@ package game
 import (
 	"fmt"
 	"math/rand"
-	"strings"
-	"sync"
 	"time"
 
 	//"github.com/AlecAivazis/survey/v2"
@@ -13,7 +11,6 @@ import (
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/fighter"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
-	"github.com/zerobugdebug/cogfight/pkg/ui"
 )
 
 // Color constants
@@ -37,22 +34,22 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 	fmt.Printf("\n%s vs %s!\n", playerFighter.Name, computerFighter.Name)
 	fighter.DisplayFighters(playerFighter, computerFighter)
 	fmt.Println("Waiting for the comments...")
-	stopChan := make(chan bool)
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go ui.RotatingPipe(stopChan, &wg)
+	//stopChan := make(chan bool)
+	//var wg sync.WaitGroup
+	//wg.Add(1)
+	//go ui.RotatingPipe(stopChan, &wg)
 	situation := fmt.Sprintf("Fight not started yet. Commentators introduce themselves and talk about the fighters\nFirst fighter: %s Second fighter: %s", playerFighter.String(), computerFighter.String())
 	var chatMessages []fighter.ChatMessage = []fighter.ChatMessage{{Role: "user", Content: situation}}
-	comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", chatMessages, "full")
+	comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", chatMessages, "stream")
 	if err != nil {
 		fmt.Printf("Can't get OpenAI response:\n%v\n", err)
 		return nil
 	}
-	stopChan <- true
-	wg.Wait()
-	strComments := strings.Replace(comments.(string), "\n\n", "\n", -1)
-	fmt.Println("\n" + strComments)
-	chatMessages = append(chatMessages, fighter.ChatMessage{Role: "assistant", Content: strComments})
+	//stopChan <- true
+	//wg.Wait()
+	//strComments := strings.Replace(comments.(string), "\n\n", "\n", -1)
+	//fmt.Println("\n" + strComments)
+	chatMessages = append(chatMessages, fighter.ChatMessage{Role: "assistant", Content: comments.(string)})
 	fmt.Scanln()
 
 	var situationDescription string
@@ -132,8 +129,8 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 		if attacker.CurrentHealth < 0 {
 			situationDescription += attacker.Name + " lost consciousness. "
 		}
-		wg.Add(1)
-		go ui.RotatingPipe(stopChan, &wg)
+		//wg.Add(1)
+		//go ui.RotatingPipe(stopChan, &wg)
 		//situation := fmt.Sprintf("Previous rounds:\n %s\n Current round to be described:\nTurn %d: %s attacks %s. %s", prevSituationDescription, currentTurn, attacker.Name, defender.Name, situationDescription)
 		situation := fmt.Sprintf("Turn %d: %s attacks %s. %s", currentTurn, attacker.Name, defender.Name, situationDescription)
 		chatMessages = append(chatMessages, fighter.ChatMessage{Role: "user", Content: situation})
@@ -143,16 +140,16 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 		// fmt.Printf("situationDescription: %v\n", situationDescription)
 		// fmt.Printf("\n-------------------------------\n")
 		// fmt.Printf("situation: %v\n", situation)
-		comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", chatMessages, "full")
+		comments, err := fighter.GetOpenAIResponse("COG_TURN_COMMENT_PROMPT", chatMessages, "stream")
 		if err != nil {
 			fmt.Printf("Can't get OpenAI response:\n%v\n", err)
 			return nil
 		}
-		stopChan <- true
-		wg.Wait()
-		strComments := strings.Replace(comments.(string), "\n\n", "\n", -1)
-		fmt.Println("\n" + strComments)
-		chatMessages = append(chatMessages, fighter.ChatMessage{Role: "assistant", Content: strComments})
+		//stopChan <- true
+		//wg.Wait()
+		//strComments := strings.Replace(comments.(string), "\n\n", "\n", -1)
+		//fmt.Println("\n" + strComments)
+		chatMessages = append(chatMessages, fighter.ChatMessage{Role: "assistant", Content: comments.(string)})
 		//prevSituationDescription = fmt.Sprintf("%s\nTurn %d: %s attacks %s. \n%s\n%s\n", prevSituationDescription, currentTurn, attacker.Name, defender.Name, situationDescription, comments.(string))
 		//fmt.Printf("\n-------------------------------\n")
 		//fmt.Printf("chatMessages: %v\n", chatMessages)
