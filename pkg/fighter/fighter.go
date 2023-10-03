@@ -175,7 +175,7 @@ func getPercentileDesc(value, min, max float64, descriptions []string) string {
 
 func (f *Fighter) String() string {
 	text := ""
-	var scaleRange float64 = 8
+	var scaleRange float64 = 4
 
 	text = fmt.Sprintf("Name: %s\n", f.Name)
 	text += fmt.Sprintf("Height: %s\n", getPercentileWithType(float64(f.Height), minHeight, maxHeight, "height"))
@@ -598,8 +598,8 @@ func DisplayFighters(f1, f2 *Fighter) {
 	//boxWidth := 50
 	numSpacesBetweenFighters := 10
 	spaceBetweenFighters := strings.Repeat(" ", numSpacesBetweenFighters)
-	var scaleRange float64 = 8.00
-	scaleSize := 16
+	var scaleRange float64 = 3.00
+	scaleSize := 12
 
 	/*
 		blue := color.New(color.FgBlue).SprintFunc()
@@ -929,12 +929,20 @@ func CreateFighter() *Fighter {
 	fmt.Printf("weightBonus: %v\n", weightBonus)
 	fmt.Printf("heightBonus: %v\n", heightBonus)
 
+	/* 	//Min is -48%, max is +48%
+	   	fighter.DamageBonus = (2*fighter.AgilityStrengthBalance + fighter.DefenseOffenseBalance + fighter.SpeedControlBalance + 4*weightBonus - 4*ageBonus) * 4
+	   	fighter.ComplexityBonus = (fighter.BurstEnduranceBalance - fighter.SpeedControlBalance + 2*fighter.IntelligenceInstinctBalance + 4*heightBonus - 4*ageBonus) * 4
+	   	fighter.HitChanceBonus = (fighter.DefenseOffenseBalance + 2*fighter.BurstEnduranceBalance - fighter.AgilityStrengthBalance - 4*weightBonus + 4*heightBonus) * 4
+	   	fighter.BlockChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.DefenseOffenseBalance - fighter.AgilityStrengthBalance) * 6
+	   	fighter.SpecialChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.SpeedControlBalance - fighter.BurstEnduranceBalance) * 2
+	*/
+
 	//Min is -48%, max is +48%
-	fighter.DamageBonus = (2*fighter.AgilityStrengthBalance + fighter.DefenseOffenseBalance + fighter.SpeedControlBalance + weightBonus - ageBonus) * 4
-	fighter.ComplexityBonus = (fighter.BurstEnduranceBalance - fighter.SpeedControlBalance + 2*fighter.IntelligenceInstinctBalance + heightBonus - ageBonus) * 4
-	fighter.HitChanceBonus = (fighter.DefenseOffenseBalance + 2*fighter.BurstEnduranceBalance - fighter.AgilityStrengthBalance - weightBonus + heightBonus) * 4
-	fighter.BlockChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.DefenseOffenseBalance - fighter.AgilityStrengthBalance) * 6
-	fighter.SpecialChanceBonus = (fighter.IntelligenceInstinctBalance - 2*fighter.SpeedControlBalance - fighter.BurstEnduranceBalance) * 2
+	fighter.DamageBonus = (4*fighter.AgilityStrengthBalance + 4*fighter.DefenseOffenseBalance + 4*weightBonus - 4*ageBonus) * 4
+	fighter.ComplexityBonus = (4*fighter.SpeedControlBalance + 4*fighter.IntelligenceInstinctBalance + 4*heightBonus - 4*ageBonus) * 4
+	fighter.HitChanceBonus = (-4*fighter.BurstEnduranceBalance - 4*fighter.AgilityStrengthBalance - 4*weightBonus + 4*heightBonus) * 4
+	fighter.BlockChanceBonus = (4*fighter.IntelligenceInstinctBalance - 4*fighter.DefenseOffenseBalance) * 6
+	fighter.SpecialChanceBonus = (4*fighter.SpeedControlBalance + 4*fighter.BurstEnduranceBalance) * 6
 
 	/* 	defaultAttacks := attack.NewDefaultAttacks()
 	   	attacks := []*attack.Attack{}
@@ -1101,11 +1109,17 @@ func GenerateComputerFighter(playerFighter *Fighter) *Fighter {
 		Conditions:                  make(map[modifiers.Condition]int),
 	}
 
-	computerFighter.DamageBonus = (2*computerFighter.AgilityStrengthBalance + computerFighter.DefenseOffenseBalance + computerFighter.SpeedControlBalance + weightBonus - ageBonus) * 4
-	computerFighter.ComplexityBonus = (computerFighter.BurstEnduranceBalance - computerFighter.SpeedControlBalance + 2*computerFighter.IntelligenceInstinctBalance + heightBonus - ageBonus) * 4
-	computerFighter.HitChanceBonus = (computerFighter.DefenseOffenseBalance - computerFighter.BurstEnduranceBalance - computerFighter.AgilityStrengthBalance - weightBonus + heightBonus) * 4
-	computerFighter.BlockChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.DefenseOffenseBalance - computerFighter.AgilityStrengthBalance) * 6
-	computerFighter.SpecialChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.SpeedControlBalance + 2*computerFighter.BurstEnduranceBalance) * 6
+	/* 	computerFighter.DamageBonus = (2*computerFighter.AgilityStrengthBalance + computerFighter.DefenseOffenseBalance + computerFighter.SpeedControlBalance + 4*weightBonus - 4*ageBonus) * 4
+	   	computerFighter.ComplexityBonus = (computerFighter.BurstEnduranceBalance - computerFighter.SpeedControlBalance + 2*computerFighter.IntelligenceInstinctBalance + 4*heightBonus - 4*ageBonus) * 4
+	   	computerFighter.HitChanceBonus = (computerFighter.DefenseOffenseBalance - computerFighter.BurstEnduranceBalance - computerFighter.AgilityStrengthBalance - 4*weightBonus + 4*heightBonus) * 4
+	   	computerFighter.BlockChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.DefenseOffenseBalance - computerFighter.AgilityStrengthBalance) * 6
+	   	computerFighter.SpecialChanceBonus = (computerFighter.IntelligenceInstinctBalance - 2*computerFighter.SpeedControlBalance + 2*computerFighter.BurstEnduranceBalance) * 6
+	*/
+	computerFighter.DamageBonus = (4*computerFighter.AgilityStrengthBalance + 4*computerFighter.DefenseOffenseBalance + 4*weightBonus - 4*ageBonus) * 4
+	computerFighter.ComplexityBonus = (4*computerFighter.SpeedControlBalance + 4*computerFighter.IntelligenceInstinctBalance + 4*heightBonus - 4*ageBonus) * 4
+	computerFighter.HitChanceBonus = (-4*computerFighter.BurstEnduranceBalance - 4*computerFighter.AgilityStrengthBalance - 4*weightBonus + 4*heightBonus) * 4
+	computerFighter.BlockChanceBonus = (4*computerFighter.IntelligenceInstinctBalance - 4*computerFighter.DefenseOffenseBalance) * 6
+	computerFighter.SpecialChanceBonus = (4*computerFighter.SpeedControlBalance + 4*computerFighter.BurstEnduranceBalance) * 6
 
 	/* defaultAttacks := attack.NewDefaultAttacks()
 	for range playerFighter.Attacks {
@@ -1178,16 +1192,22 @@ func GetOpenAIResponse(promptEnvVariable string, chatMessages []ChatMessage, res
 	}
 
 	conn.WriteMessage(websocket.TextMessage, jsonData)
+	colorStack := []string{"default"}
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			return nil, fmt.Errorf("Error marshaling JSON: %v\nSource data: %v", err, data)
 		}
-		if string(msg) != "<END>" {
-			fmt.Print(string(msg))
-			result += string(msg)
-		} else {
-			return result, nil
+		text := string(msg)
+		coloredText := ""
+		if !strings.Contains(text, ("Endpoint request timed out")) {
+			if text != "<END>" {
+				coloredText, colorStack = ui.ColorizeChunk(text, colorStack)
+				fmt.Print(coloredText)
+				result += text
+			} else {
+				return result, nil
+			}
 		}
 	}
 
