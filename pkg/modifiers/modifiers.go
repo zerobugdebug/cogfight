@@ -49,7 +49,7 @@ var DefaultConditionAttributes = map[Condition]map[Modifier]int{
 		Duration: 1,
 	},
 	CriticalHit: {
-		DamageMult: 5,
+		DamageMult: 2,
 		Duration:   1,
 	},
 	Bleeding: {
@@ -59,7 +59,7 @@ var DefaultConditionAttributes = map[Condition]map[Modifier]int{
 	Paralysed: {
 		SureStrike: 1,
 		SkipTurn:   1,
-		Duration:   2,
+		Duration:   1,
 	},
 	Insulted: {
 		OpponentHitChance:   20,

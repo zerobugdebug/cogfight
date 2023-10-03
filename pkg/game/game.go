@@ -2,14 +2,13 @@ package game
 
 import (
 	"fmt"
-	"math/rand"
-	"time"
 
 	"github.com/fatih/color"
 
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/fighter"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
+
 )
 
 // Color constants
@@ -24,7 +23,7 @@ const (
 
 // Fight represents the fight match between two fighters
 func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fighter.Fighter {
-	rand.Seed(time.Now().UnixNano())
+	//rand.Seed(time.Now().UnixNano())
 
 	currentTurn := 1 // keep track of whose turn it is
 	var attacker *fighter.Fighter
@@ -49,6 +48,7 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 	//strComments := strings.Replace(comments.(string), "\n\n", "\n", -1)
 	//fmt.Println("\n" + strComments)
 	chatMessages = append(chatMessages, fighter.ChatMessage{Role: "assistant", Content: comments.(string)})
+	color.HiBlue("\n\nPress 'Enter' to continue...")
 	fmt.Scanln()
 
 	var situationDescription string
@@ -72,15 +72,23 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 
 		//Apply pre-turn conditions
 		for condition := range attacker.Conditions {
-			for modifier, value := range modifiers.DefaultConditionAttributes[condition] {
-				switch modifier {
-				case modifiers.SkipTurn:
-					{
-						skipTurn = value
-						situationDescription += attacker.Name + " is currently " + condition.String() + ". "
+			if attacker.Conditions[condition] < 1 {
+				delete(attacker.Conditions, condition)
+				defender.RemoveCondition(attacker, condition)
+				situationDescription += attacker.Name + " is not " + condition.String() + " anymore. "
+			} else {
+				for modifier, value := range modifiers.DefaultConditionAttributes[condition] {
+					switch modifier {
+					case modifiers.SkipTurn:
+						{
+							skipTurn = value
+							situationDescription += attacker.Name + " is currently " + condition.String() + ". "
+						}
 					}
 				}
+				attacker.Conditions[condition] -= 1
 			}
+
 		}
 
 		if skipTurn != 0 {
@@ -114,13 +122,6 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 					}
 				}
 			}
-			attacker.Conditions[condition] -= 1
-			if attacker.Conditions[condition] < 1 {
-				delete(attacker.Conditions, condition)
-				defender.RemoveCondition(attacker, condition)
-				situationDescription += attacker.Name + " is not " + condition.String() + " anymore. "
-			}
-
 		}
 		if defender.CurrentHealth < 0 {
 			situationDescription += defender.Name + " is knocked out. "
@@ -154,7 +155,9 @@ func Fight(playerFighter *fighter.Fighter, computerFighter *fighter.Fighter) *fi
 		//fmt.Printf("chatMessages: %v\n", chatMessages)
 		//fmt.Printf("\n-------------------------------\n")
 		currentTurn++
+		color.HiBlue("\n\nPress 'Enter' to continue...")
 		fmt.Scanln()
+
 	}
 
 	// Determine the winner and return the fighter object
