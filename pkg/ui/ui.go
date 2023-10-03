@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 	"unicode/utf8"
+
+	"github.com/fatih/color"
 )
 
 type Alignment int
@@ -17,6 +19,75 @@ const (
 	Center
 	Right
 )
+
+type colorDelims struct {
+	Start, End string
+	Color      *color.Color
+	Remove     bool
+}
+
+// Const map alternative
+func colorDelimMap() map[string]colorDelims {
+	return map[string]colorDelims{
+		"cyan":   {"[", "]", color.New(color.FgCyan), false},
+		"yellow": {"{", "}", color.New(color.FgYellow), true},
+		"green":  {"\"", "\"", color.New(color.FgGreen), true},
+	}
+}
+
+// Const *struct alternative
+func defaultColor() *color.Color {
+	return color.New(color.FgWhite)
+}
+
+func ColorizeChunk(chunk string, stateStack []string) (string, []string) {
+	coloredChunk := ""
+	colorMap := colorDelimMap()
+	for i := 0; i < len(chunk); i++ {
+		char := string(chunk[i])
+		currentState := stateStack[len(stateStack)-1]
+		if currentState == "default" {
+			for colorKey, delimiters := range colorMap {
+				if char == delimiters.Start {
+					if !delimiters.Remove {
+						coloredChunk += delimiters.Color.Sprint(char)
+						//delimiters.Color.Print(char)
+					}
+					//Push to stack
+					stateStack = append(stateStack, colorKey)
+					currentState = colorKey
+					break
+				}
+			}
+			if currentState == "default" {
+				coloredChunk += defaultColor().Sprint(char)
+			}
+		} else {
+			if char == colorMap[currentState].End {
+				if !colorMap[currentState].Remove {
+					coloredChunk += colorMap[currentState].Color.Sprint(char)
+				}
+				//Pop from stack
+				stateStack = stateStack[:len(stateStack)-1]
+				if len(stateStack) == 0 {
+					//color.New(color.FgRed).Println("Error: Unmatched delimiter")
+					//Push to stack
+					stateStack = append(stateStack, "default")
+				}
+			} else {
+				coloredChunk += colorMap[currentState].Color.Sprint(char)
+			}
+		}
+	}
+
+	/* 	// Error Handling
+	   	if len(stateStack) > 1 {
+	   		color.New(color.FgRed).Println("Error: Unmatched delimiter")
+	   		stateStack = []string{"normal"}
+	   	} */
+
+	return coloredChunk, stateStack
+}
 
 func ScalePrint(value, min, max float64, colorLeft func(a ...interface{}) string, colorRight func(a ...interface{}) string, length int) string {
 	normalizedValue := (value - min) / (max - min)
