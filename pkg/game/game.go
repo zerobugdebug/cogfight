@@ -8,7 +8,6 @@ import (
 	"github.com/zerobugdebug/cogfight/pkg/attack"
 	"github.com/zerobugdebug/cogfight/pkg/fighter"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
-
 )
 
 // Color constants
