@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/zerobugdebug/cogfight/pkg/log"
+	"github.com/zerobugdebug/cogfight/pkg/logging"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
 )
 
@@ -135,10 +135,10 @@ func NewAttacks() *Attacks {
 }
 
 func NewDefaultAttacks() *Attacks {
-	log.Infof("Reading configuration file %s", defaultAttacksFile)
+	logging.Infof("Reading configuration file %s", defaultAttacksFile)
 	file, err := os.Open(defaultAttacksFile)
 	if err != nil {
-		log.Fatalf("Failed to open default attack configuration file: %v", err)
+		logging.Fatalf("Failed to open default attack configuration file: %v", err)
 		return nil
 	}
 	defer file.Close()
@@ -147,7 +147,7 @@ func NewDefaultAttacks() *Attacks {
 	reader := csv.NewReader(file)
 	records, err := reader.ReadAll()
 	if err != nil {
-		log.Fatalf("Failed to read default attack configuration file: %v", err)
+		logging.Fatalf("Failed to read default attack configuration file: %v", err)
 		return nil
 	}
 
@@ -165,7 +165,7 @@ func NewDefaultAttacks() *Attacks {
 	for _, record := range records[1:] {
 		attackType, ok := stringToAttackTypeMap[record[1]]
 		if !ok {
-			log.Infof("Unknown attack type: %v. Defaulting to %s", record[1], attackTypeNames[0])
+			logging.Infof("Unknown attack type: %v. Defaulting to %s", record[1], attackTypeNames[0])
 			continue
 		}
 
