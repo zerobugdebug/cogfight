@@ -1,8 +1,12 @@
 package attack
 
 import (
+	"encoding/csv"
 	"math/rand"
+	"os"
+	"strconv"
 
+	"github.com/zerobugdebug/cogfight/pkg/log"
 	"github.com/zerobugdebug/cogfight/pkg/modifiers"
 )
 
@@ -19,6 +23,10 @@ const (
 	MinSpecialChance             = 5
 	MinDamage                    = 5
 	MaxDamage                    = 300
+)
+
+const (
+	defaultAttacksFile = "default_attacks.csv"
 )
 
 // AttackType represents the type of a fighting move
@@ -127,6 +135,67 @@ func NewAttacks() *Attacks {
 }
 
 func NewDefaultAttacks() *Attacks {
+	log.Infof("Reading configuration file %s", defaultAttacksFile)
+	file, err := os.Open(defaultAttacksFile)
+	if err != nil {
+		log.Fatalf("Failed to open default attack configuration file: %v", err)
+		return nil
+	}
+	defer file.Close()
+
+	// Read the CSV file
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		log.Fatalf("Failed to read default attack configuration file: %v", err)
+		return nil
+	}
+
+	// Create a new Attacks struct
+	defaultAttacks := NewAttacks()
+
+	// Generate reverse map to attackTypeNames to match strings from the attack CSV file
+	var stringToAttackTypeMap = make(map[string]AttackType)
+
+	for k, v := range attackTypeNames {
+		stringToAttackTypeMap[v] = k
+	}
+
+	// Skip the header row
+	for _, record := range records[1:] {
+		attackType, ok := stringToAttackTypeMap[record[1]]
+		if !ok {
+			log.Infof("Unknown attack type: %v. Defaulting to %s", record[1], attackTypeNames[0])
+			continue
+		}
+
+		damage, _ := strconv.ParseFloat(record[2], 64)
+		complexity, _ := strconv.ParseFloat(record[3], 64)
+		hitChance, _ := strconv.ParseFloat(record[4], 64)
+		blockChance, _ := strconv.ParseFloat(record[5], 64)
+		criticalChance, _ := strconv.ParseFloat(record[6], 64)
+		specialChance, _ := strconv.ParseFloat(record[7], 64)
+
+		attack := &Attack{
+			Name:           record[0],
+			Type:           attackType,
+			Damage:         damage,
+			Complexity:     complexity,
+			HitChance:      hitChance,
+			BlockChance:    blockChance,
+			CriticalChance: criticalChance,
+			SpecialChance:  specialChance,
+		}
+
+		defaultAttacks.AddAttack(attack)
+	}
+
+	return defaultAttacks
+
+}
+
+/* func NewDefaultAttacks() *Attacks {
+
 	defaultAttacks := NewAttacks()
 
 	defaultAttacks.AddAttack(&Attack{"Spear Hand", VitalStrike, 10, 25, 300, 10, 1, 50})
@@ -182,7 +251,7 @@ func NewDefaultAttacks() *Attacks {
 
 	return defaultAttacks
 
-}
+} */
 
 func (attacks *Attacks) AddAttack(attack *Attack) {
 	// Add attack to the map for lookup by name
